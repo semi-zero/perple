@@ -57,10 +57,18 @@ class MetaSearchAgent implements MetaSearchAgentType {
   private strParser = new StringOutputParser();
 
   constructor(config: Config) {
+    console.log('[MetaSearchAgent] Initializing with config:', {
+      searchWeb: config.searchWeb,
+      rerank: config.rerank,
+      summarizer: config.summarizer,
+      activeEngines: config.activeEngines
+    });
     this.config = config;
   }
 
   private async createSearchRetrieverChain(llm: BaseChatModel) {
+    console.log('[SearchRetrieverChain] Initializing with LLM:', llm);
+  
     (llm as unknown as ChatOpenAI).temperature = 0;
 
     return RunnableSequence.from([
@@ -71,15 +79,20 @@ class MetaSearchAgent implements MetaSearchAgentType {
         const linksOutputParser = new LineListOutputParser({
           key: 'links',
         });
+        console.log('[SearchRetrieverChain] Processing input:', input);
 
         const questionOutputParser = new LineOutputParser({
           key: 'question',
         });
 
         const links = await linksOutputParser.parse(input);
+        console.log('[SearchRetrieverChain] Parsed links:', links.length);
+
         let question = this.config.summarizer
           ? await questionOutputParser.parse(input)
           : input;
+
+        console.log('[SearchRetrieverChain] Parsed question:', question);
 
         if (question === 'not_needed') {
           return { query: '', docs: [] };
@@ -93,6 +106,7 @@ class MetaSearchAgent implements MetaSearchAgentType {
           let docs = [];
 
           const linkDocs = await getDocumentsFromLinks({ links });
+          console.log('[SearchRetrieverChain] Retrieved documents from links:', linkDocs.length);
 
           const docGroups: Document[] = [];
 
@@ -200,14 +214,15 @@ class MetaSearchAgent implements MetaSearchAgentType {
               docs.push(document);
             }),
           );
-
+          console.log('[SearchRetrieverChain] Processed link documents:', docs.length);
           return { query: question, docs: docs };
         } else {
+          console.log('[SearchRetrieverChain] No links found, performing web search');
           const res = await searchSearxng(question, {
             language: 'en',
             engines: this.config.activeEngines,
           });
-
+          console.log('[SearchRetrieverChain] Search results:', res.results.length);
           const documents = res.results.map(
             (result) =>
               new Document({
@@ -236,20 +251,118 @@ class MetaSearchAgent implements MetaSearchAgentType {
     embeddings: Embeddings,
     optimizationMode: 'speed' | 'balanced' | 'quality',
   ) {
+
+    // local_experiment
+    optimizationMode = 'quality'
+    console.log('[createAnsweringChain] Optimization mode:', optimizationMode);
+    if (optimizationMode === 'quality') {
+      return RunnableSequence.from([
+        RunnableMap.from({
+            query: (input: BasicChainInput) => input.query,
+            chat_history: (input: BasicChainInput) => input.chat_history,
+          }),
+          RunnableLambda.from(async (input: { query: string, chat_history: BaseMessage[] }) => {
+              try {
+                  console.log('[AnsweringChain] Processing query:', input.query);
+                  const history = input.chat_history.map(msg => ({
+                      role: msg._getType() === 'human' ? 'user' : 'assistant',
+                      content: msg.content
+                  }));
+                  console.log('[AnsweringChain] Chat history length:', input.chat_history.length);
+
+                  const response = await fetch('http://localhost:8000/api/chat', {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                          message: input.query,
+                          history: history
+                      })
+                  });
+
+                  console.log('[AnsweringChain] FastAPI Response:', response);
+
+                  if (!response.ok) {
+                      throw new Error('FastAPI 서버 응답 오류');
+                  }
+
+                  // const reader = response.body?.getReader();
+                  // if (!reader) throw new Error('응답 스트림을 읽을 수 없습니다');
+
+                  // return reader;
+                  // 응답을 텍스트 스트림으로 변환
+                  const textStream = response.body?.pipeThrough(new TextDecoderStream());
+                  console.log('[AnsweringChain] FastAPI textStream:', textStream);
+                  if (!textStream) throw new Error('응답 스트림을 읽을 수 없습니다');
+                  
+                  const reader = textStream.getReader();
+                  return new ReadableStream({
+                    async start(controller) {
+                      try {
+                        while (true) {
+                          const { done, value } = await reader.read();
+                          if (done) break;
+                          
+                          // FastAPI 응답을 LangChain 형식으로 변환
+                          const lines = value.split('\n').filter(line => line.trim());
+                          for (const line of lines) {
+                            const event = JSON.parse(line);
+                            // 객체를 문자열로 적절히 변환
+                            const chunk = typeof event.data === 'object' ? 
+                            event.data.content || JSON.stringify(event.data) : 
+                            event.data.toString();
+                            console.log('[AnsweringChain] FastAPI event:', event);
+
+                            controller.enqueue({
+                              event: 'on_chain_stream',
+                              name: 'FinalResponseGenerator',
+                              data: { chunk}
+                            });
+                          }
+                        }
+                        controller.close();
+                      } catch (error) {
+                        controller.error(error);
+                      }
+                    }
+                  });
+              } catch (error) {
+                  console.error('[FastAPI 요청 오류]:', error);
+                  throw error;
+              }
+          }).withConfig({
+              runName: 'FinalResponseGenerator'
+          })
+      ]);
+  }
+    
+    
+    console.log('[createAnsweringChain] Creating chain with mode:', optimizationMode);
+    console.log('[createAnsweringChain] File IDs:', fileIds);
     return RunnableSequence.from([
       RunnableMap.from({
-        query: (input: BasicChainInput) => input.query,
-        chat_history: (input: BasicChainInput) => input.chat_history,
+        query: (input: BasicChainInput) => {
+          console.log('[AnsweringChain] Processing query:', input.query);
+          return input.query;
+        },
+        chat_history: (input: BasicChainInput) => {
+          console.log('[AnsweringChain] Chat history length:', input.chat_history.length);
+          return input.chat_history;
+        },
         date: () => new Date().toISOString(),
         context: RunnableLambda.from(async (input: BasicChainInput) => {
+          console.log('[AnsweringChain] Processing context for query:', input.query);
           const processedHistory = formatChatHistoryAsString(
             input.chat_history,
           );
+          console.log('[AnsweringChain] Processed history length:', processedHistory.length);
 
           let docs: Document[] | null = null;
           let query = input.query;
 
           if (this.config.searchWeb) {
+            console.log('[AnsweringChain] Performing web search');
             const searchRetrieverChain =
               await this.createSearchRetrieverChain(llm);
 
@@ -257,6 +370,7 @@ class MetaSearchAgent implements MetaSearchAgentType {
               chat_history: processedHistory,
               query,
             });
+            console.log('[AnsweringChain] Search results:', searchRetrieverResult.docs.length);
 
             query = searchRetrieverResult.query;
             docs = searchRetrieverResult.docs;
@@ -269,6 +383,7 @@ class MetaSearchAgent implements MetaSearchAgentType {
             embeddings,
             optimizationMode,
           );
+          console.log('[AnsweringChain] Sorted docs:', sortedDocs.length);
 
           return sortedDocs;
         })
@@ -296,12 +411,19 @@ class MetaSearchAgent implements MetaSearchAgentType {
     embeddings: Embeddings,
     optimizationMode: 'speed' | 'balanced' | 'quality',
   ) {
+    console.log('[rerankDocs] Starting reranking');
+    console.log('[rerankDocs] Query:', query);
+    console.log('[rerankDocs] Docs count:', docs.length);
+    console.log('[rerankDocs] File IDs:', fileIds.length);
+    console.log('[rerankDocs] Mode:', optimizationMode);
     if (docs.length === 0 && fileIds.length === 0) {
+      console.log('[rerankDocs] No documents to rerank');
       return docs;
     }
 
     const filesData = fileIds
       .map((file) => {
+        console.log('[rerankDocs] Processing file:', file);
         const filePath = path.join(process.cwd(), 'uploads', file);
 
         const contentPath = filePath + '-extracted.json';
@@ -323,6 +445,7 @@ class MetaSearchAgent implements MetaSearchAgentType {
         return fileSimilaritySearchObject;
       })
       .flat();
+      console.log('[rerankDocs] Processed files data length:', filesData.length);
 
     if (query.toLocaleLowerCase() === 'summarize') {
       return docs.slice(0, 15);
@@ -429,34 +552,84 @@ class MetaSearchAgent implements MetaSearchAgentType {
     stream: IterableReadableStream<StreamEvent>,
     emitter: eventEmitter,
   ) {
-    for await (const event of stream) {
-      if (
-        event.event === 'on_chain_end' &&
-        event.name === 'FinalSourceRetriever'
-      ) {
-        ``;
-        emitter.emit(
-          'data',
-          JSON.stringify({ type: 'sources', data: event.data.output }),
-        );
+    console.log('[handleStream] Starting stream processing');
+
+    if (stream instanceof ReadableStreamDefaultReader) {
+      // FastAPI 스트림 처리
+      try {
+          while (true) {
+              const { done, value } = await stream.read();
+              if (done) break;
+
+              // const text = new TextDecoder().decode(value);
+              // const lines = text.split('\n').filter(line => line.trim());
+              // 각 줄을 개별적으로 처리
+              const lines = value.split('\n').filter(line => line.trim());
+
+              for (const line of lines) {
+                  try {
+                      const event = JSON.parse(line);
+                      console.log('[AnsweringChain] FastAPI event:', event);
+                      emitter.emit('data', JSON.stringify({
+                        type: 'response',
+                        data: {
+                          event: 'on_chain_stream',
+                          name: 'FinalResponseGenerator',
+                          data: { chunk: event.data }
+                        }
+                      }));
+                      // if (event.type === 'response') {
+                      //     emitter.emit('data', JSON.stringify({
+                      //         type: 'response',
+                      //         data:  event.data.toString()  // 문자열로 변환 확실히
+                      //     }));
+                      // } else if (event.type === 'end') {
+                      //     emitter.emit('end');
+                      // }
+                  } catch (e) {
+                      console.error('JSON 파싱 오류:', e);
+                  }
+              }
+          }
+      } catch (error) {
+          console.error('스트림 처리 오류:', error);
+          emitter.emit('error', error);
       }
-      if (
-        event.event === 'on_chain_stream' &&
-        event.name === 'FinalResponseGenerator'
-      ) {
-        emitter.emit(
-          'data',
-          JSON.stringify({ type: 'response', data: event.data.chunk }),
-        );
-      }
-      if (
-        event.event === 'on_chain_end' &&
-        event.name === 'FinalResponseGenerator'
-      ) {
-        emitter.emit('end');
+    } else {
+      // 기존 LangChain 스트림 처리
+      
+        for await (const event of stream) {
+          
+          if (
+            event.event === 'on_chain_end' &&
+            event.name === 'FinalSourceRetriever'
+          ) {
+            
+            emitter.emit(
+              'data',
+              JSON.stringify({ type: 'sources', data: event.data.output }),
+            );
+          }
+          if (
+            event.event === 'on_chain_stream' &&
+            event.name === 'FinalResponseGenerator'
+          ) {
+            
+            emitter.emit(
+              'data',
+              JSON.stringify({ type: 'response', data: event.data.chunk }),
+            );
+          }
+          if (
+            event.event === 'on_chain_end' &&
+            event.name === 'FinalResponseGenerator'
+          ) {
+            
+            emitter.emit('end');
+          }
+        }
       }
     }
-  }
 
   async searchAndAnswer(
     message: string,
@@ -466,6 +639,12 @@ class MetaSearchAgent implements MetaSearchAgentType {
     optimizationMode: 'speed' | 'balanced' | 'quality',
     fileIds: string[],
   ) {
+    console.log('\n[searchAndAnswer] Starting new search');
+    console.log('[searchAndAnswer] Message:', message);
+    console.log('[searchAndAnswer] History:', history);
+    console.log('[searchAndAnswer] History length:', history.length);
+    console.log('[searchAndAnswer] Optimization mode:', optimizationMode);
+    console.log('[searchAndAnswer] File IDs:', fileIds);
     const emitter = new eventEmitter();
 
     const answeringChain = await this.createAnsweringChain(
@@ -475,6 +654,7 @@ class MetaSearchAgent implements MetaSearchAgentType {
       optimizationMode,
     );
 
+    
     const stream = answeringChain.streamEvents(
       {
         chat_history: history,
@@ -484,7 +664,8 @@ class MetaSearchAgent implements MetaSearchAgentType {
         version: 'v1',
       },
     );
-
+    console.log('[searchAndAnswer] Stream created, starting handling');
+    console.log('stream', stream)
     this.handleStream(stream, emitter);
 
     return emitter;

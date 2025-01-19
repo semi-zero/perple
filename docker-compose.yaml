@@ -9,6 +9,7 @@ services:
       - perplexica-network
     restart: unless-stopped
 
+
   perplexica-backend:
     build:
       context: .

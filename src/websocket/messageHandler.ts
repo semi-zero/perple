@@ -12,6 +12,7 @@ import MetaSearchAgent, {
   MetaSearchAgentType,
 } from '../search/metaSearchAgent';
 import prompts from '../prompts';
+import type { InferModel } from 'drizzle-orm';
 
 type Message = {
   messageId: string;
@@ -118,6 +119,8 @@ const handleEmitterEvents = (
   });
   emitter.on('end', () => {
     ws.send(JSON.stringify({ type: 'messageEnd', messageId: messageId }));
+    
+    type MessagesInsert = InferModel<typeof messagesSchema, 'insert'>;
 
     db.insert(messagesSchema)
       .values({
@@ -125,11 +128,11 @@ const handleEmitterEvents = (
         chatId: chatId,
         messageId: messageId,
         role: 'assistant',
-        metadata: JSON.stringify({
+        metadata: {
           createdAt: new Date(),
           ...(sources && sources.length > 0 && { sources }),
-        }),
-      })
+        },
+      } as MessagesInsert)
       .execute();
   });
   emitter.on('error', (data) => {
@@ -205,6 +208,8 @@ export const handleMessage = async (
             where: eq(chats.id, parsedMessage.chatId),
           });
 
+          type ChatsInsert = InferModel<typeof chats, 'insert'>;
+
           if (!chat) {
             await db
               .insert(chats)
@@ -214,7 +219,7 @@ export const handleMessage = async (
                 createdAt: new Date().toString(),
                 focusMode: parsedWSMessage.focusMode,
                 files: parsedWSMessage.files.map(getFileDetails),
-              })
+              } as ChatsInsert)
               .execute();
           }
 
@@ -222,6 +227,8 @@ export const handleMessage = async (
             where: eq(messagesSchema.messageId, humanMessageId),
           });
 
+          
+          type MessagesInsert = InferModel<typeof messagesSchema, 'insert'>;
           if (!messageExists) {
             await db
               .insert(messagesSchema)
@@ -230,10 +237,10 @@ export const handleMessage = async (
                 chatId: parsedMessage.chatId,
                 messageId: humanMessageId,
                 role: 'user',
-                metadata: JSON.stringify({
+                metadata: {
                   createdAt: new Date(),
-                }),
-              })
+                },
+              } as MessagesInsert)
               .execute();
           } else {
             await db

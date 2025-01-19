@@ -177,7 +177,7 @@ const Attach = ({
         hidden
       />
       <CopyPlus size={showText ? 18 : undefined} />
-      {showText && <p className="text-xs font-medium pl-[1px]">Attach</p>}
+      {showText && <p className="text-xs font-medium pl-[1px]">File</p>}
     </button>
   );
 };

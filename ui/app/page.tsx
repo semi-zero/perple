@@ -3,8 +3,8 @@ import { Metadata } from 'next';
 import { Suspense } from 'react';
 
 export const metadata: Metadata = {
-  title: 'Chat - Perplexica',
-  description: 'Chat with the internet, chat with Perplexica.',
+  title: 'SDI R&D Assistant',
+  description: 'SAMSUNG SDI R&D 채팅 시스템입니다.',
 };
 
 const Home = () => {

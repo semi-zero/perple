@@ -281,7 +281,7 @@ const loadMessages = async (
   const messages = data.messages.map((msg: any) => {
     return {
       ...msg,
-      ...JSON.parse(msg.metadata),
+      metadata: msg.metadata || {},
     };
   }) as Message[];
 
@@ -345,12 +345,14 @@ const ChatWindow = ({ id }: { id?: string }) => {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    console.log('[ChatWindow] 초기화 - chatId:', chatId);
     if (
       chatId &&
       !newChatCreated &&
       !isMessagesLoaded &&
       messages.length === 0
     ) {
+      console.log('[ChatWindow] 메시지 로딩 시작');
       loadMessages(
         chatId,
         setMessages,
@@ -362,6 +364,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
         setFileIds,
       );
     } else if (!chatId) {
+      console.log('[ChatWindow] 새 채팅 생성');
       setNewChatCreated(true);
       setIsMessagesLoaded(true);
       setChatId(crypto.randomBytes(20).toString('hex'));
@@ -395,6 +398,13 @@ const ChatWindow = ({ id }: { id?: string }) => {
   const sendMessage = async (message: string, messageId?: string) => {
     if (loading) return;
 
+    console.log('[ChatWindow] 메시지 전송 시작:', {
+      messageId,
+      message: message.substring(0, 100) + (message.length > 100 ? '...' : ''),
+      focusMode,
+      optimizationMode
+    });
+
     setLoading(true);
     setMessageAppeared(false);
 
@@ -423,10 +433,12 @@ const ChatWindow = ({ id }: { id?: string }) => {
       ...prevMessages,
       {
         content: message,
-        messageId: messageId,
+        messageId: messageId!,
         chatId: chatId!,
-        role: 'user',
+        role: 'user' as const,  // 'as const'를 추가하여 리터럴 타입으로 명시
         createdAt: new Date(),
+        suggestions: undefined,  // 선택적 필드 명시적으로 추가
+        sources: undefined      // 선택적 필드 명시적으로 추가
       },
     ]);
 
@@ -434,12 +446,14 @@ const ChatWindow = ({ id }: { id?: string }) => {
       const data = JSON.parse(e.data);
 
       if (data.type === 'error') {
+        console.error('[ChatWindow] 에러 발생:', data.data);
         toast.error(data.data);
         setLoading(false);
         return;
       }
 
       if (data.type === 'sources') {
+        console.log('[ChatWindow] 소스 수신:', data.data.length);
         sources = data.data;
         if (!added) {
           setMessages((prevMessages) => [
@@ -489,6 +503,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
       }
 
       if (data.type === 'messageEnd') {
+        console.log('[ChatWindow] 메시지 수신 완료');
         setChatHistory((prevHistory) => [
           ...prevHistory,
           ['human', message],
@@ -523,6 +538,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
   };
 
   const rewrite = (messageId: string) => {
+    console.log('[ChatWindow] 메시지 재작성:', messageId);
     const index = messages.findIndex((msg) => msg.messageId === messageId);
 
     if (index === -1) return;
