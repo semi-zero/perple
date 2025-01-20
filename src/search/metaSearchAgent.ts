@@ -260,6 +260,67 @@ class MetaSearchAgent implements MetaSearchAgentType {
         RunnableMap.from({
             query: (input: BasicChainInput) => input.query,
             chat_history: (input: BasicChainInput) => input.chat_history,
+            context: RunnableLambda.from(async (input: BasicChainInput) => {
+              try {
+                const response = await fetch('http://localhost:8000/api/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    message: input.query,
+                  })
+                });
+        
+                if (!response.ok) {
+                  throw new Error('문서 검색 오류');
+                }
+        
+                const docs = await response.json();
+                return docs;
+              } catch (error) {
+                console.error('[문서 검색 오류]:', error);
+                return [];
+              }
+            })
+            .withConfig({
+              runName: 'FinalSourceRetriever',
+            })
+            .pipe(this.processDocs),
+            // context: RunnableLambda.from(async (input: BasicChainInput) => {
+            //   let docs: Document[] | null = null;
+            //   let query = input.query;
+        
+            //   // 가짜 검색 결과 생성
+            //   const mockSearchResult = {
+            //     query: query,
+            //     docs: [
+            //       new Document({
+            //         pageContent: "가짜 문서 내용 1",
+            //         metadata: {
+            //           title: "테스트 문서 1",
+            //           url: "http://example.com/1"
+            //         }
+            //       }),
+            //       new Document({
+            //         pageContent: "가짜 문서 내용 2",
+            //         metadata: {
+            //           title: "테스트 문서 2",
+            //           url: "http://example.com/2"
+            //         }
+            //       })
+            //     ]
+            //   };
+        
+            //   query = mockSearchResult.query;
+            //   docs = mockSearchResult.docs;
+        
+            //   return docs;
+            // })
+            // .withConfig({
+            //   runName: 'FinalSourceRetriever',
+            // })
+            // .pipe(this.processDocs),
           }),
           RunnableLambda.from(async (input: { query: string, chat_history: BaseMessage[] }) => {
               try {
@@ -309,16 +370,14 @@ class MetaSearchAgent implements MetaSearchAgentType {
                           for (const line of lines) {
                             const event = JSON.parse(line);
                             // 객체를 문자열로 적절히 변환
-                            const chunk = typeof event.data === 'object' ? 
-                            event.data.content || JSON.stringify(event.data) : 
-                            event.data.toString();
-                            console.log('[AnsweringChain] FastAPI event:', event);
+                            // const chunk = typeof event.data === 'object' ? 
+                            // event.data.content || JSON.stringify(event.data) : 
+                            // event.data.toString();
+                            // console.log('[AnsweringChain] FastAPI event:', event);
 
-                            controller.enqueue({
-                              event: 'on_chain_stream',
-                              name: 'FinalResponseGenerator',
-                              data: { chunk}
-                            });
+                            controller.enqueue(
+                              event.data
+                            );
                           }
                         }
                         controller.close();
@@ -554,48 +613,48 @@ class MetaSearchAgent implements MetaSearchAgentType {
   ) {
     console.log('[handleStream] Starting stream processing');
 
-    if (stream instanceof ReadableStreamDefaultReader) {
-      // FastAPI 스트림 처리
-      try {
-          while (true) {
-              const { done, value } = await stream.read();
-              if (done) break;
+    // if (stream instanceof ReadableStreamDefaultReader) {
+    //   // FastAPI 스트림 처리
+    //   try {
+    //       while (true) {
+    //           const { done, value } = await stream.read();
+    //           if (done) break;
 
-              // const text = new TextDecoder().decode(value);
-              // const lines = text.split('\n').filter(line => line.trim());
-              // 각 줄을 개별적으로 처리
-              const lines = value.split('\n').filter(line => line.trim());
+    //           // const text = new TextDecoder().decode(value);
+    //           // const lines = text.split('\n').filter(line => line.trim());
+    //           // 각 줄을 개별적으로 처리
+    //           const lines = value.split('\n').filter(line => line.trim());
 
-              for (const line of lines) {
-                  try {
-                      const event = JSON.parse(line);
-                      console.log('[AnsweringChain] FastAPI event:', event);
-                      emitter.emit('data', JSON.stringify({
-                        type: 'response',
-                        data: {
-                          event: 'on_chain_stream',
-                          name: 'FinalResponseGenerator',
-                          data: { chunk: event.data }
-                        }
-                      }));
-                      // if (event.type === 'response') {
-                      //     emitter.emit('data', JSON.stringify({
-                      //         type: 'response',
-                      //         data:  event.data.toString()  // 문자열로 변환 확실히
-                      //     }));
-                      // } else if (event.type === 'end') {
-                      //     emitter.emit('end');
-                      // }
-                  } catch (e) {
-                      console.error('JSON 파싱 오류:', e);
-                  }
-              }
-          }
-      } catch (error) {
-          console.error('스트림 처리 오류:', error);
-          emitter.emit('error', error);
-      }
-    } else {
+    //           for (const line of lines) {
+    //               try {
+    //                   const event = JSON.parse(line);
+    //                   console.log('[AnsweringChain] FastAPI event:', event);
+    //                   emitter.emit('data', JSON.stringify({
+    //                     type: 'response',
+    //                     data: {
+    //                       event: 'on_chain_stream',
+    //                       name: 'FinalResponseGenerator',
+    //                       data: { chunk: event.data }
+    //                     }
+    //                   }));
+    //                   // if (event.type === 'response') {
+    //                   //     emitter.emit('data', JSON.stringify({
+    //                   //         type: 'response',
+    //                   //         data:  event.data.toString()  // 문자열로 변환 확실히
+    //                   //     }));
+    //                   // } else if (event.type === 'end') {
+    //                   //     emitter.emit('end');
+    //                   // }
+    //               } catch (e) {
+    //                   console.error('JSON 파싱 오류:', e);
+    //               }
+    //           }
+    //       }
+    //   } catch (error) {
+    //       console.error('스트림 처리 오류:', error);
+    //       emitter.emit('error', error);
+    //   }
+    // } else {
       // 기존 LangChain 스트림 처리
       
         for await (const event of stream) {
@@ -628,7 +687,7 @@ class MetaSearchAgent implements MetaSearchAgentType {
             emitter.emit('end');
           }
         }
-      }
+      // }
     }
 
   async searchAndAnswer(
