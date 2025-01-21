@@ -455,6 +455,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
       if (data.type === 'sources') {
         console.log('[ChatWindow] 소스 수신:', data.data.length);
         sources = data.data;
+        console.log('[ChatWindow] 소스 수신 sources:', sources);
         if (!added) {
           setMessages((prevMessages) => [
             ...prevMessages,

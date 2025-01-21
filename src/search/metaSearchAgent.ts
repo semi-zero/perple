@@ -276,53 +276,36 @@ class MetaSearchAgent implements MetaSearchAgentType {
                   throw new Error('문서 검색 오류');
                 }
         
-                const docs = await response.json();
-                return docs;
+                const { docs, sql_query } = await response.json();
+                return {
+                  docs,
+                  sql_query
+                };
               } catch (error) {
                 console.error('[문서 검색 오류]:', error);
-                return [];
+                return {
+                  docs: [],
+                  sql_query: ''
+                };
               }
             })
             .withConfig({
-              runName: 'FinalSourceRetriever',
+              runName: 'FinalSourceTableRetriever',
             })
-            .pipe(this.processDocs),
-            // context: RunnableLambda.from(async (input: BasicChainInput) => {
-            //   let docs: Document[] | null = null;
-            //   let query = input.query;
-        
-            //   // 가짜 검색 결과 생성
-            //   const mockSearchResult = {
-            //     query: query,
-            //     docs: [
-            //       new Document({
-            //         pageContent: "가짜 문서 내용 1",
-            //         metadata: {
-            //           title: "테스트 문서 1",
-            //           url: "http://example.com/1"
-            //         }
-            //       }),
-            //       new Document({
-            //         pageContent: "가짜 문서 내용 2",
-            //         metadata: {
-            //           title: "테스트 문서 2",
-            //           url: "http://example.com/2"
-            //         }
-            //       })
-            //     ]
-            //   };
-        
-            //   query = mockSearchResult.query;
-            //   docs = mockSearchResult.docs;
-        
-            //   return docs;
-            // })
-            // .withConfig({
-            //   runName: 'FinalSourceRetriever',
-            // })
-            // .pipe(this.processDocs),
+            .pipe((input) => {
+              // processDocs는 docs 배열만 처리
+              const processed_docs = this.processDocs(input.docs);
+              // sql_query는 그대로 전달
+              return {
+                processed_docs,
+                sql_query: input.sql_query
+              };
+            }),
           }),
-          RunnableLambda.from(async (input: { query: string, chat_history: BaseMessage[] }) => {
+          RunnableLambda.from(async (input: { query: string, 
+                                            chat_history: BaseMessage[],
+                                            context: { processed_docs: string, sql_query: string } 
+          }) => {
               try {
                   console.log('[AnsweringChain] Processing query:', input.query);
                   const history = input.chat_history.map(msg => ({
@@ -330,7 +313,7 @@ class MetaSearchAgent implements MetaSearchAgentType {
                       content: msg.content
                   }));
                   console.log('[AnsweringChain] Chat history length:', input.chat_history.length);
-
+                  console.log('[AnsweringChain] Context:', input.context);
                   const response = await fetch('http://localhost:8000/api/chat', {
                       method: 'POST',
                       headers: {
@@ -661,12 +644,12 @@ class MetaSearchAgent implements MetaSearchAgentType {
           
           if (
             event.event === 'on_chain_end' &&
-            event.name === 'FinalSourceRetriever'
+            event.name === 'FinalSourceTableRetriever'
           ) {
             
             emitter.emit(
               'data',
-              JSON.stringify({ type: 'sources', data: event.data.output }),
+              JSON.stringify({ type: 'sources', data: event.data.output.docs }),
             );
           }
           if (
