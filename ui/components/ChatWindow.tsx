@@ -11,6 +11,9 @@ import { useSearchParams } from 'next/navigation';
 import { getSuggestions } from '@/lib/actions';
 import Error from 'next/error';
 
+import SearchSteps from '@/components/SearchSteps';
+
+
 export type Message = {
   messageId: string;
   chatId: string;
@@ -26,6 +29,7 @@ export interface File {
   fileExtension: string;
   fileId: string;
 }
+
 
 const useSocket = (
   url: string,
@@ -344,6 +348,51 @@ const ChatWindow = ({ id }: { id?: string }) => {
 
   const [notFound, setNotFound] = useState(false);
 
+  // 더미 검색 단계 데이터를 관리하기 위한 상태
+  interface SearchStep {
+    type: 'search' | 'processing' | 'complete';
+    query?: string;
+    sources?: string[];
+    status: 'pending' | 'active' | 'completed';
+  }
+
+  const [searchSteps, setSearchSteps] = useState<SearchStep[]>([]);
+
+  // 메시지 전송 시 검색 단계를 시뮬레이션하는 함수
+  const simulateSearchSteps = () => {
+    // 검색 시작
+    setSearchSteps([{
+      type: 'search',
+      query: 'latest research papers on battery technology 2025',
+      status: 'active'
+    }]);
+
+    // 1초 후 소스 처리 단계
+    setTimeout(() => {
+      setSearchSteps(prev => [
+        { ...prev[0], status: 'completed' },
+        {
+          type: 'processing',
+          sources: ['rdworldonline', 'cardino', 'idtechex'],
+          status: 'active'
+        }
+      ]);
+    }, 1000);
+
+    // 2초 후 완료 단계
+    // setTimeout(() => {
+    //   setSearchSteps(prev => [
+    //     ...prev.map(step => ({ ...step, status: 'completed' })),
+    //     {
+    //       type: 'complete',
+    //       status: 'completed'
+    //     }
+    //   ]);
+    // }, 2000);
+  };
+  
+  
+
   useEffect(() => {
     console.log('[ChatWindow] 초기화 - chatId:', chatId);
     if (
@@ -407,6 +456,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
 
     setLoading(true);
     setMessageAppeared(false);
+    simulateSearchSteps(); // 검색 단계 시뮬레이션 시작
 
     let sources: Document[] | undefined = undefined;
     let recievedMessage = '';
@@ -453,7 +503,6 @@ const ChatWindow = ({ id }: { id?: string }) => {
       }
 
       if (data.type === 'sources') {
-        console.log('[ChatWindow] 소스 수신:', data.data.length);
         sources = data.data;
         console.log('[ChatWindow] 소스 수신 sources:', sources);
         if (!added) {
@@ -573,6 +622,8 @@ const ChatWindow = ({ id }: { id?: string }) => {
     );
   }
 
+
+
   return isReady ? (
     notFound ? (
       <Error statusCode={404} />
@@ -581,6 +632,10 @@ const ChatWindow = ({ id }: { id?: string }) => {
         {messages.length > 0 ? (
           <>
             <Navbar chatId={chatId!} messages={messages} />
+             {/* SearchSteps 컴포넌트 추가
+             {loading && searchSteps.length > 0 && (
+              <SearchSteps steps={searchSteps} />
+            )} */}
             <Chat
               loading={loading}
               messages={messages}
@@ -591,6 +646,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
               setFileIds={setFileIds}
               files={files}
               setFiles={setFiles}
+              searchSteps={searchSteps} /* searchSteps prop 추가 */
             />
           </>
         ) : (

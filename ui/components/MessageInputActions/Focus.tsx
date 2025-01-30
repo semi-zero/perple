@@ -54,8 +54,8 @@ const focusModes = [
     ),
   },
   {
-    key: 'redditSearch',
-    title: 'Reddit',
+    key: 'pipelineSearch',
+    title: 'Pipeline',
     description: 'Search for discussions and opinions',
     icon: (
       <SiReddit

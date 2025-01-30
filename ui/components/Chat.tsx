@@ -6,6 +6,29 @@ import { File, Message } from './ChatWindow';
 import MessageBox from './MessageBox';
 import MessageBoxLoading from './MessageBoxLoading';
 
+import SearchSteps from '@/components/SearchSteps';
+
+// 더미 검색 단계 데이터를 관리하기 위한 상태
+interface SearchStep {
+  type: 'search' | 'processing' | 'complete';
+  query?: string;
+  sources?: string[];
+  status: 'pending' | 'active' | 'completed';
+}
+
+interface ChatProps {
+  loading: boolean;
+  messages: Message[];
+  sendMessage: (message: string) => void;
+  messageAppeared: boolean;
+  rewrite: (messageId: string) => void;
+  fileIds: string[];
+  setFileIds: (fileIds: string[]) => void;
+  files: File[];
+  setFiles: (files: File[]) => void;
+  searchSteps: SearchStep[]; // 추가
+}
+
 const Chat = ({
   loading,
   messages,
@@ -16,6 +39,7 @@ const Chat = ({
   setFileIds,
   files,
   setFiles,
+  searchSteps,
 }: {
   messages: Message[];
   sendMessage: (message: string) => void;
@@ -26,6 +50,7 @@ const Chat = ({
   setFileIds: (fileIds: string[]) => void;
   files: File[];
   setFiles: (files: File[]) => void;
+  searchSteps: SearchStep[]; // 추가
 }) => {
   const [dividerWidth, setDividerWidth] = useState(0);
   const dividerRef = useRef<HTMLDivElement | null>(null);
@@ -76,6 +101,11 @@ const Chat = ({
             {!isLast && msg.role === 'assistant' && (
               <div className="h-px w-full bg-light-secondary dark:bg-dark-secondary" />
             )}
+            {/* SearchSteps를 메시지 목록 시작 전에 추가 */}
+            {/* 마지막 메시지 다음에 SearchSteps 표시 */}
+            {isLast && loading && searchSteps.length > 0 && (
+                    <SearchSteps steps={searchSteps} />
+                  )}
           </Fragment>
         );
       })}

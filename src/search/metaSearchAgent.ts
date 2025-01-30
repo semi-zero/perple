@@ -253,16 +253,18 @@ class MetaSearchAgent implements MetaSearchAgentType {
   ) {
 
     // local_experiment
-    optimizationMode = 'quality'
+    // optimizationMode = 'quality'
     console.log('[createAnsweringChain] Optimization mode:', optimizationMode);
-    if (optimizationMode === 'quality') {
+    if (this.config.activeEngines.includes('pipeline')) {
       return RunnableSequence.from([
         RunnableMap.from({
             query: (input: BasicChainInput) => input.query,
             chat_history: (input: BasicChainInput) => input.chat_history,
             context: RunnableLambda.from(async (input: BasicChainInput) => {
               try {
-                const response = await fetch('http://localhost:8000/api/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
+                // local_experiment
+                // const response = await fetch('http://localhost:8000/api/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
+                  const response = await fetch('http://fastapi-container:8000/api/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -314,7 +316,9 @@ class MetaSearchAgent implements MetaSearchAgentType {
                   }));
                   console.log('[AnsweringChain] Chat history length:', input.chat_history.length);
                   console.log('[AnsweringChain] Context:', input.context);
+                  // local_experiment
                   const response = await fetch('http://localhost:8000/api/chat', {
+                  // const response = await fetch('http://fastapi-container:8000/api/chat', {
                       method: 'POST',
                       headers: {
                           'Content-Type': 'application/json',
@@ -641,7 +645,16 @@ class MetaSearchAgent implements MetaSearchAgentType {
       // 기존 LangChain 스트림 처리
       
         for await (const event of stream) {
-          
+          if (
+            event.event === 'on_chain_end' &&
+            event.name === 'FinalSourceRetriever'
+          ) {
+            ``;
+            emitter.emit(
+              'data',
+              JSON.stringify({ type: 'sources', data: event.data.output }),
+            );
+          }
           if (
             event.event === 'on_chain_end' &&
             event.name === 'FinalSourceTableRetriever'

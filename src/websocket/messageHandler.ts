@@ -75,8 +75,8 @@ export const searchHandlers = {
     searchWeb: true,
     summarizer: false,
   }),
-  redditSearch: new MetaSearchAgent({
-    activeEngines: ['reddit'],
+  pipelineSearch: new MetaSearchAgent({
+    activeEngines: ['pipeline'],
     queryGeneratorPrompt: prompts.redditSearchRetrieverPrompt,
     responsePrompt: prompts.redditSearchResponsePrompt,
     rerank: true,
