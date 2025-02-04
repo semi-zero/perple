@@ -16,55 +16,49 @@ import {
 import { SiReddit, SiYoutube } from '@icons-pack/react-simple-icons';
 import { Fragment } from 'react';
 
-const focusModes = [
-  {
-    key: 'webSearch',
-    title: 'All',
-    description: 'Searches across all of the internet',
-    icon: <Globe size={20} />,
-  },
-  {
-    key: 'academicSearch',
-    title: 'Academic',
-    description: 'Search in published academic papers',
-    icon: <SwatchBook size={20} />,
-  },
+export const focusModes = [
+  // {
+  //   key: 'webSearch',
+  //   title: 'All',
+  //   description: 'Searches across all of the internet',
+  //   icon: <Globe size={20} />,
+  // },
   {
     key: 'writingAssistant',
-    title: 'Writing',
-    description: 'Chat without searching the web',
+    title: '글쓰기',
+    description: '텍스트 생성 또는 채팅',
     icon: <Pencil size={16} />,
-  },
-  {
-    key: 'wolframAlphaSearch',
-    title: 'Wolfram Alpha',
-    description: 'Computational knowledge engine',
-    icon: <BadgePercent size={20} />,
-  },
-  {
-    key: 'youtubeSearch',
-    title: 'Youtube',
-    description: 'Search and watch videos',
-    icon: (
-      <SiYoutube
-        className="h-5 w-auto mr-0.5"
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
-      />
-    ),
   },
   {
     key: 'pipelineSearch',
     title: 'Pipeline',
-    description: 'Search for discussions and opinions',
-    icon: (
-      <SiReddit
-        className="h-5 w-auto mr-0.5"
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
-      />
-    ),
+    description: '파이프라인에서 R&D 데이터 검색',
+    icon: <Globe size={20} />,
   },
+  {
+    key: 'academicSearch',
+    title: '논문 검색',
+    description: '최신 배터리 논문 검색',
+    icon: <SwatchBook size={20} />,
+  },
+  // {
+  //   key: 'wolframAlphaSearch',
+  //   title: 'Wolfram Alpha',
+  //   description: 'Computational knowledge engine',
+  //   icon: <BadgePercent size={20} />,
+  // },
+  // {
+  //   key: 'youtubeSearch',
+  //   title: 'Youtube',
+  //   description: 'Search and watch videos',
+  //   icon: (
+  //     <SiYoutube
+  //       className="h-5 w-auto mr-0.5"
+  //       onPointerEnterCapture={undefined}
+  //       onPointerLeaveCapture={undefined}
+  //     />
+  //   ),
+  // },
 ];
 
 const Focus = ({
@@ -91,7 +85,7 @@ const Focus = ({
         ) : (
           <div className="flex flex-row items-center space-x-1">
             <ScanEye size={20} />
-            <p className="text-xs font-medium hidden lg:block">Focus</p>
+            <p className="text-xs font-medium hidden lg:block">모드</p>
           </div>
         )}
       </PopoverButton>

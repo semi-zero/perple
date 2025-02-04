@@ -3,16 +3,25 @@ import { Message } from './ChatWindow';
 import { useEffect, useState } from 'react';
 import { formatTimeDifference } from '@/lib/utils';
 import DeleteChat from './DeleteChat';
+// focusModes 배열 import 하기
+// check
+import { focusModes } from '@/components/MessageInputActions/Focus';
 
 const Navbar = ({
   chatId,
   messages,
+  mode, // 새로운 prop 추가
 }: {
   messages: Message[];
   chatId: string;
+  mode: string;
 }) => {
   const [title, setTitle] = useState<string>('');
   const [timeAgo, setTimeAgo] = useState<string>('');
+  const getModeTitle = (modeKey: string) => {
+    const selectedMode = focusModes.find((m) => m.key === modeKey);
+    return selectedMode?.title || '모드';
+  };
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -54,7 +63,7 @@ const Navbar = ({
       </a>
       <div className="hidden lg:flex flex-row items-center justify-center space-x-2">
         <Clock size={17} />
-        <p className="text-xs">{timeAgo} ago</p>
+        <p className="text-xs">{getModeTitle(mode)}</p>
       </div>
       <p className="hidden lg:flex">{title}</p>
 

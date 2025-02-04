@@ -631,7 +631,8 @@ const ChatWindow = ({ id }: { id?: string }) => {
       <div>
         {messages.length > 0 ? (
           <>
-            <Navbar chatId={chatId!} messages={messages} />
+            {/* check */}
+            <Navbar chatId={chatId!} messages={messages} mode={focusMode} />
              {/* SearchSteps 컴포넌트 추가
              {loading && searchSteps.length > 0 && (
               <SearchSteps steps={searchSteps} />
@@ -647,6 +648,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
               files={files}
               setFiles={setFiles}
               searchSteps={searchSteps} /* searchSteps prop 추가 */
+              focusMode={focusMode}
             />
           </>
         ) : (

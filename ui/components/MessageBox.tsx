@@ -86,7 +86,7 @@ const MessageBox = ({
                 <div className="flex flex-row items-center space-x-2">
                   <BookCopy className="text-black dark:text-white" size={20} />
                   <h3 className="text-black dark:text-white font-medium text-xl">
-                    Sources
+                    출처
                   </h3>
                 </div>
                 <MessageSources sources={message.sources} />
@@ -102,7 +102,7 @@ const MessageBox = ({
                   size={20}
                 />
                 <h3 className="text-black dark:text-white font-medium text-xl">
-                  Answer
+                  답변
                 </h3>
               </div>
               <Markdown
@@ -152,7 +152,7 @@ const MessageBox = ({
                     <div className="flex flex-col space-y-3 text-black dark:text-white">
                       <div className="flex flex-row items-center space-x-2 mt-4">
                         <Layers3 />
-                        <h3 className="text-xl font-medium">Related</h3>
+                        <h3 className="text-xl font-medium">관련</h3>
                       </div>
                       <div className="flex flex-col space-y-3">
                         {message.suggestions.map((suggestion, i) => (
@@ -183,15 +183,20 @@ const MessageBox = ({
                 )}
             </div>
           </div>
-          <div className="lg:sticky lg:top-20 flex flex-col items-center space-y-3 w-full lg:w-3/12 z-30 h-full pb-4">
-            <SearchImages
-              query={history[messageIndex - 1].content}
+
+          <div className="lg:sticky lg:top-0 flex flex-col items-center space-y-3 w-full lg:w-3/12 z-30 h-full pb-4">
+          <a href="https://www.naver.com" target="_blank" rel="noopener noreferrer">
+              <img 
+                src="https://picsum.photos/400/200" 
+                alt="Random placeholder"
+                className="w-full h-[200px] object-cover rounded-lg cursor-pointer"
+              />
+            </a>
+            {/* check */}
+            {/* <SearchVideos
               chatHistory={history.slice(0, messageIndex - 1)}
-            />
-            <SearchVideos
-              chatHistory={history.slice(0, messageIndex - 1)}
               query={history[messageIndex - 1].content}
-            />
+            /> */}
           </div>
         </div>
       )}

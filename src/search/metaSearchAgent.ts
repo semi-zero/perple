@@ -263,8 +263,8 @@ class MetaSearchAgent implements MetaSearchAgentType {
             context: RunnableLambda.from(async (input: BasicChainInput) => {
               try {
                 // local_experiment
-                // const response = await fetch('http://localhost:8000/api/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
-                  const response = await fetch('http://fastapi-container:8000/api/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
+                  const response = await fetch('http://localhost:8000/api/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
+                  // const response = await fetch('http://fastapi-container:8000/api/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',

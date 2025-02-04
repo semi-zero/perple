@@ -27,6 +27,7 @@ interface ChatProps {
   files: File[];
   setFiles: (files: File[]) => void;
   searchSteps: SearchStep[]; // 추가
+  focusmode: string;
 }
 
 const Chat = ({
@@ -40,6 +41,7 @@ const Chat = ({
   files,
   setFiles,
   searchSteps,
+  focusMode, // mode prop 추가
 }: {
   messages: Message[];
   sendMessage: (message: string) => void;
@@ -51,6 +53,7 @@ const Chat = ({
   files: File[];
   setFiles: (files: File[]) => void;
   searchSteps: SearchStep[]; // 추가
+  focusMode: string;
 }) => {
   const [dividerWidth, setDividerWidth] = useState(0);
   const dividerRef = useRef<HTMLDivElement | null>(null);
@@ -123,6 +126,7 @@ const Chat = ({
             setFileIds={setFileIds}
             files={files}
             setFiles={setFiles}
+            focusMode={focusMode}
           />
         </div>
       )}
