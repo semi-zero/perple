@@ -24,131 +24,98 @@ const MessageSources = ({ sources }: { sources: Document[] }) => {
   };
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {sources.slice(0, 3).map((source, i) => (
         <a
-          className="bg-light-100 hover:bg-light-200 dark:bg-dark-100 dark:hover:bg-dark-200 transition duration-200 rounded-lg p-3 flex flex-col space-y-2 font-medium"
+          className="bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl p-4 flex flex-col space-y-3 border border-gray-200 dark:border-gray-700"
           key={i}
           href={source.metadata.url}
           target="_blank"
         >
-          <p className="dark:text-white text-xs overflow-hidden whitespace-nowrap text-ellipsis">
-            {source.metadata.title}
-          </p>
-          <div className="flex flex-row items-center justify-between">
-            <div className="flex flex-row items-center space-x-1">
+          <p className="text-sm font-medium dark:text-white truncate">{source.metadata.title}</p>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-2">
               {source.metadata.url === 'File' ? (
-                <div className="bg-dark-200 hover:bg-dark-100 transition duration-200 flex items-center justify-center w-6 h-6 rounded-full">
-                  <File size={12} className="text-white/70" />
+                <div className="bg-gray-700 p-2 rounded-full flex items-center justify-center">
+                  <File size={14} className="text-white" />
                 </div>
               ) : (
                 <img
                   src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${source.metadata.url}`}
-                  width={16}
-                  height={16}
+                  width={18}
+                  height={18}
                   alt="favicon"
-                  className="rounded-lg h-4 w-4"
+                  className="rounded-lg"
                 />
               )}
-              <p className="text-xs text-black/50 dark:text-white/50 overflow-hidden whitespace-nowrap text-ellipsis">
-                {source.metadata.url.replace(/.+\/\/|www.|\..+/g, '')}
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {source.metadata.url.replace(/.+\/\/|www.|\..+/g, '')}
               </p>
             </div>
-            <div className="flex flex-row items-center space-x-1 text-black/50 dark:text-white/50 text-xs">
-              <div className="bg-black/50 dark:bg-white/50 h-[4px] w-[4px] rounded-full" />
-              <span>{i + 1}</span>
-            </div>
+            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">#{i + 1}</span>
           </div>
         </a>
       ))}
       {sources.length > 3 && (
         <button
           onClick={openModal}
-          className="bg-light-100 hover:bg-light-200 dark:bg-dark-100 dark:hover:bg-dark-200 transition duration-200 rounded-lg p-3 flex flex-col space-y-2 font-medium"
+          className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white transition-all duration-300 hover:shadow-lg rounded-xl p-4 font-semibold flex flex-col items-center justify-center"
         >
-          <div className="flex flex-row items-center space-x-1">
-            {sources.slice(3, 6).map((source, i) => {
-              return source.metadata.url === 'File' ? (
-                <div className="bg-dark-200 hover:bg-dark-100 transition duration-200 flex items-center justify-center w-6 h-6 rounded-full">
-                  <File size={12} className="text-white/70" />
-                </div>
-              ) : (
-                <img
-                  src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${source.metadata.url}`}
-                  width={16}
-                  height={16}
-                  alt="favicon"
-                  className="rounded-lg h-4 w-4"
-                />
-              );
-            })}
-          </div>
-          <p className="text-xs text-black/50 dark:text-white/50">
-            View {sources.length - 3} more
-          </p>
+          <p className="text-sm">View {sources.length - 3} more</p>
         </button>
       )}
       <Transition appear show={isDialogOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={closeModal}>
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <TransitionChild
-                as={Fragment}
-                enter="ease-out duration-200"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-100"
-                leaveFrom="opacity-100 scale-200"
-                leaveTo="opacity-0 scale-95"
-              >
-                <DialogPanel className="w-full max-w-md transform rounded-2xl bg-light-secondary dark:bg-dark-secondary border border-light-200 dark:border-dark-200 p-6 text-left align-middle shadow-xl transition-all">
-                  <DialogTitle className="text-lg font-medium leading-6 dark:text-white">
-                    Sources
-                  </DialogTitle>
-                  <div className="grid grid-cols-2 gap-2 overflow-auto max-h-[300px] mt-2 pr-2">
-                    {sources.map((source, i) => (
-                      <a
-                        className="bg-light-secondary hover:bg-light-200 dark:bg-dark-secondary dark:hover:bg-dark-200 border border-light-200 dark:border-dark-200 transition duration-200 rounded-lg p-3 flex flex-col space-y-2 font-medium"
-                        key={i}
-                        href={source.metadata.url}
-                        target="_blank"
-                      >
-                        <p className="dark:text-white text-xs overflow-hidden whitespace-nowrap text-ellipsis">
-                          {source.metadata.title}
-                        </p>
-                        <div className="flex flex-row items-center justify-between">
-                          <div className="flex flex-row items-center space-x-1">
-                            {source.metadata.url === 'File' ? (
-                              <div className="bg-dark-200 hover:bg-dark-100 transition duration-200 flex items-center justify-center w-6 h-6 rounded-full">
-                                <File size={12} className="text-white/70" />
-                              </div>
-                            ) : (
-                              <img
-                                src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${source.metadata.url}`}
-                                width={16}
-                                height={16}
-                                alt="favicon"
-                                className="rounded-lg h-4 w-4"
-                              />
-                            )}
-                            <p className="text-xs text-black/50 dark:text-white/50 overflow-hidden whitespace-nowrap text-ellipsis">
-                              {source.metadata.url.replace(
+          <div className="fixed inset-0 flex items-center justify-center p-6 bg-black/50 backdrop-blur">
+            <TransitionChild
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <DialogPanel className="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-900 shadow-xl p-6 border border-gray-300 dark:border-gray-700">
+                <DialogTitle className="text-lg font-bold dark:text-white">Sources</DialogTitle>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-auto max-h-72 mt-4">
+                  {sources.map((source, i) => (
+                    <a
+                      className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 rounded-lg p-3 flex flex-col space-y-2"
+                      key={i}
+                      href={source.metadata.url}
+                      target="_blank"
+                    >
+                      <p className="text-xs font-medium dark:text-white truncate">{source.metadata.title}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          {source.metadata.url === 'File' ? (
+                            <div className="bg-gray-700 p-2 rounded-full flex items-center justify-center">
+                              <File size={14} className="text-white" />
+                            </div>
+                          ) : (
+                            <img
+                              src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${source.metadata.url}`}
+                              width={18}
+                              height={18}
+                              alt="favicon"
+                              className="rounded-lg"
+                            />
+                          )}
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {source.metadata.url.replace(
                                 /.+\/\/|www.|\..+/g,
                                 '',
                               )}
-                            </p>
-                          </div>
-                          <div className="flex flex-row items-center space-x-1 text-black/50 dark:text-white/50 text-xs">
-                            <div className="bg-black/50 dark:bg-white/50 h-[4px] w-[4px] rounded-full" />
-                            <span>{i + 1}</span>
-                          </div>
+                          </p>
                         </div>
-                      </a>
-                    ))}
-                  </div>
-                </DialogPanel>
-              </TransitionChild>
-            </div>
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">#{i + 1}</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </DialogPanel>
+            </TransitionChild>
           </div>
         </Dialog>
       </Transition>

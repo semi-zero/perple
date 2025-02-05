@@ -3,14 +3,12 @@ import { Message } from './ChatWindow';
 import { useEffect, useState } from 'react';
 import { formatTimeDifference } from '@/lib/utils';
 import DeleteChat from './DeleteChat';
-// focusModes 배열 import 하기
-// check
 import { focusModes } from '@/components/MessageInputActions/Focus';
 
 const Navbar = ({
   chatId,
   messages,
-  mode, // 새로운 prop 추가
+  mode,
 }: {
   messages: Message[];
   chatId: string;
@@ -18,6 +16,7 @@ const Navbar = ({
 }) => {
   const [title, setTitle] = useState<string>('');
   const [timeAgo, setTimeAgo] = useState<string>('');
+  
   const getModeTitle = (modeKey: string) => {
     const selectedMode = focusModes.find((m) => m.key === modeKey);
     return selectedMode?.title || '모드';
@@ -50,28 +49,19 @@ const Navbar = ({
     }, 1000);
 
     return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [messages]);
 
   return (
-    <div className="fixed z-40 top-0 left-0 right-0 px-4 lg:pl-[104px] lg:pr-6 lg:px-8 flex flex-row items-center justify-between w-full py-4 text-sm text-black dark:text-white/70 border-b bg-light-primary dark:bg-dark-primary border-light-100 dark:border-dark-200">
-      <a
-        href="/"
-        className="active:scale-95 transition duration-100 cursor-pointer lg:hidden"
-      >
-        <Edit size={17} />
-      </a>
-      <div className="hidden lg:flex flex-row items-center justify-center space-x-2">
-        <Clock size={17} />
-        <p className="text-xs">{getModeTitle(mode)}</p>
+    <div className="fixed z-50 top-0 left-20 right-0 px-4 flex flex-row items-center justify-between w-full py-3 text-sm text-black dark:text-white/70 border-b bg-white/80 dark:bg-dark-primary/80 backdrop-blur-md shadow-md">
+      <div className="flex items-center space-x-2">
+        <Clock size={16} />
+        <p className="text-sm font-medium">{getModeTitle(mode)}</p>
       </div>
-      <p className="hidden lg:flex">{title}</p>
-
-      <div className="flex flex-row items-center space-x-4">
-        <Share
-          size={17}
-          className="active:scale-95 transition duration-100 cursor-pointer"
-        />
+      <p className="text-sm font-semibold truncate w-1/2 text-center">{title}</p>
+      <div className="flex flex-row items-center space-x-3">
+        <button className="p-2 bg-gray-200 dark:bg-dark-300 rounded-full hover:scale-105 transition-transform">
+          <Share size={16} />
+        </button>
         <DeleteChat redirect chatId={chatId} chats={[]} setChats={() => {}} />
       </div>
     </div>

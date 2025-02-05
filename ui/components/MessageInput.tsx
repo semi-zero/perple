@@ -42,7 +42,6 @@ const MessageInput = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement;
-
       const isInputFocused =
         activeElement?.tagName === 'INPUT' ||
         activeElement?.tagName === 'TEXTAREA' ||
@@ -77,7 +76,7 @@ const MessageInput = ({
         }
       }}
       className={cn(
-        'bg-light-secondary dark:bg-dark-secondary p-4 flex items-center overflow-hidden border border-light-200 dark:border-dark-200',
+        'bg-[#F8F9FA] dark:bg-[#1E1E1E] p-4 flex items-center overflow-hidden border border-[#DCE1E6] dark:border-[#2C2C2C]',
         mode === 'multi' ? 'flex-col rounded-lg' : 'flex-row rounded-full',
       )}
     >
@@ -96,7 +95,7 @@ const MessageInput = ({
         onHeightChange={(height, props) => {
           setTextareaRows(Math.ceil(height / props.rowHeight));
         }}
-        className="transition bg-transparent dark:placeholder:text-white/50 placeholder:text-sm text-sm dark:text-white resize-none focus:outline-none w-full px-2 max-h-24 lg:max-h-36 xl:max-h-48 flex-grow flex-shrink"
+        className="transition bg-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:text-sm text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none w-full px-2 max-h-24 lg:max-h-36 xl:max-h-48 flex-grow flex-shrink"
         placeholder="후속 질문하기"
       />
       {mode === 'single' && (
@@ -108,7 +107,7 @@ const MessageInput = ({
           /> */}
           <button
             disabled={message.trim().length === 0 || loading}
-            className="bg-[#24A0ED] text-white disabled:text-black/50 dark:disabled:text-white/50 hover:bg-opacity-85 transition duration-100 disabled:bg-[#e0e0dc79] dark:disabled:bg-[#ececec21] rounded-full p-2"
+            className="bg-[#A7C7E7] text-white disabled:text-gray-300 dark:disabled:text-gray-500 hover:bg-[#8FAACC] transition duration-100 disabled:bg-gray-200 dark:disabled:bg-gray-700 rounded-full p-2"
           >
             <ArrowUp className="bg-background" size={17} />
           </button>
@@ -131,9 +130,9 @@ const MessageInput = ({
             /> */}
             <button
               disabled={message.trim().length === 0 || loading}
-              className="bg-[#24A0ED] text-white text-black/50 dark:disabled:text-white/50 hover:bg-opacity-85 transition duration-100 disabled:bg-[#e0e0dc79] dark:disabled:bg-[#ececec21] rounded-full p-2"
+              className="bg-[#A7C7E7] text-white disabled:text-gray-300 dark:disabled:text-gray-500 hover:bg-[#8FAACC] transition duration-100 disabled:bg-gray-200 dark:disabled:bg-gray-700 rounded-full p-2"
             >
-              <ArrowUp className="bg-background" size={17} />
+              <ArrowUp size={17} />
             </button>
           </div>
         </div>

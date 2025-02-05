@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { BookOpenText, Home, Search, SquarePen, Settings } from 'lucide-react';
+import { BookOpenText, Home, Search, SquarePen, Settings, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { useSelectedLayoutSegments } from 'next/navigation';
 import React, { useState, type ReactNode } from 'react';
@@ -10,7 +10,7 @@ import SettingsDialog from './SettingsDialog';
 
 const VerticalIconContainer = ({ children }: { children: ReactNode }) => {
   return (
-    <div className="flex flex-col items-center gap-y-3 w-full">{children}</div>
+    <div className="flex flex-col items-center gap-y-4 w-full">{children}</div>
   );
 };
 
@@ -38,14 +38,20 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
       active: segments.includes('library'),
       label: 'Library',
     },
+    {
+      icon: MessageSquare,
+      href: '/chats',
+      active: segments.includes('chats'),
+      label: 'Chats',
+    },
   ];
 
   return (
     <div>
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-20 lg:flex-col">
-        <div className="flex grow flex-col items-center justify-between gap-y-5 overflow-y-auto bg-light-secondary dark:bg-dark-secondary px-2 py-8">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-28 lg:flex-col">
+        <div className="flex grow flex-col items-center justify-between gap-y-6 overflow-y-auto bg-pastel-blue dark:bg-pastel-dark-blue px-3 py-10 rounded-lg shadow-lg">
           <a href="/">
-            <SquarePen className="cursor-pointer" />
+            <SquarePen className="cursor-pointer text-pastel-purple dark:text-pastel-light-purple" />
           </a>
           <VerticalIconContainer>
             {navLinks.map((link, i) => (
@@ -53,15 +59,15 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
                 key={i}
                 href={link.href}
                 className={cn(
-                  'relative flex flex-row items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 duration-150 transition w-full py-2 rounded-lg',
+                  'relative flex flex-row items-center justify-center cursor-pointer hover:bg-pastel-gray/50 dark:hover:bg-pastel-dark-gray/50 duration-200 transition w-full py-3 rounded-xl',
                   link.active
-                    ? 'text-black dark:text-white'
-                    : 'text-black/70 dark:text-white/70',
+                    ? 'text-pastel-purple dark:text-pastel-light-purple'
+                    : 'text-pastel-gray dark:text-pastel-dark-gray',
                 )}
               >
-                <link.icon />
+                <link.icon className="h-6 w-6" />
                 {link.active && (
-                  <div className="absolute right-0 -mr-2 h-full w-1 rounded-l-lg bg-black dark:bg-white" />
+                  <div className="absolute right-0 -mr-3 h-full w-2 rounded-l-xl bg-pastel-purple dark:bg-pastel-light-purple" />
                 )}
               </Link>
             ))}
@@ -69,7 +75,7 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
 
           <Settings
             onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-            className="cursor-pointer"
+            className="cursor-pointer text-pastel-purple dark:text-pastel-light-purple"
           />
 
           <SettingsDialog
@@ -79,23 +85,23 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
         </div>
       </div>
 
-      <div className="fixed bottom-0 w-full z-50 flex flex-row items-center gap-x-6 bg-light-primary dark:bg-dark-primary px-4 py-4 shadow-sm lg:hidden">
+      <div className="fixed bottom-0 w-full z-50 flex flex-row items-center gap-x-6 bg-pastel-light dark:bg-pastel-dark px-6 py-5 shadow-lg rounded-t-lg lg:hidden">
         {navLinks.map((link, i) => (
           <Link
             href={link.href}
             key={i}
             className={cn(
-              'relative flex flex-col items-center space-y-1 text-center w-full',
+              'relative flex flex-col items-center space-y-2 text-center w-full',
               link.active
-                ? 'text-black dark:text-white'
-                : 'text-black dark:text-white/70',
+                ? 'text-pastel-purple dark:text-pastel-light-purple'
+                : 'text-pastel-gray dark:text-pastel-dark-gray',
             )}
           >
             {link.active && (
-              <div className="absolute top-0 -mt-4 h-1 w-full rounded-b-lg bg-black dark:bg-white" />
+              <div className="absolute top-0 -mt-4 h-2 w-full rounded-b-lg bg-pastel-purple dark:bg-pastel-light-purple" />
             )}
-            <link.icon />
-            <p className="text-xs">{link.label}</p>
+            <link.icon className="h-6 w-6" />
+            <p className="text-sm">{link.label}</p>
           </Link>
         ))}
       </div>

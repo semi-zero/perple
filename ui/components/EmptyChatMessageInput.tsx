@@ -28,33 +28,18 @@ const EmptyChatMessageInput = ({
   files: File[];
   setFiles: (files: File[]) => void;
 }) => {
-  const [copilotEnabled, setCopilotEnabled] = useState(false);
   const [message, setMessage] = useState('');
-
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const activeElement = document.activeElement;
-
-      const isInputFocused =
-        activeElement?.tagName === 'INPUT' ||
-        activeElement?.tagName === 'TEXTAREA' ||
-        activeElement?.hasAttribute('contenteditable');
-
-      if (e.key === '/' && !isInputFocused) {
+      if (e.key === '/' && document.activeElement !== inputRef.current) {
         e.preventDefault();
         inputRef.current?.focus();
       }
     };
-
     document.addEventListener('keydown', handleKeyDown);
-
-    inputRef.current?.focus();
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   return (
@@ -64,53 +49,44 @@ const EmptyChatMessageInput = ({
         sendMessage(message);
         setMessage('');
       }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          sendMessage(message);
-          setMessage('');
-        }
-      }}
       className="w-full"
     >
-      <div className="flex flex-col bg-light-secondary dark:bg-dark-secondary px-5 pt-5 pb-2 rounded-lg w-full border border-light-200 dark:border-dark-200">
+      <div className="flex flex-col bg-white dark:bg-dark-800 shadow-lg rounded-2xl p-4 border border-light-200 dark:border-dark-200">
         <TextareaAutosize
           ref={inputRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           minRows={2}
-          className="bg-transparent placeholder:text-black/50 dark:placeholder:text-white/50 text-sm text-black dark:text-white resize-none focus:outline-none w-full max-h-24 lg:max-h-36 xl:max-h-48"
+          className="bg-transparent placeholder-gray-500 dark:placeholder-gray-400 text-lg text-gray-900 dark:text-white resize-none focus:outline-none w-full"
           placeholder="무엇을 도와드릴까요?"
         />
-        <div className="flex flex-row items-center justify-between mt-4">
-          <div className="flex flex-row items-center space-x-2 lg:space-x-4">
-            <Focus focusMode={focusMode} setFocusMode={setFocusMode} />
-            
-          </div>
-          <div className="flex flex-row items-center space-x-1 sm:space-x-4">
-            {/* check */}
+        <div className="flex items-center justify-between mt-4">
+          <Focus focusMode={focusMode} setFocusMode={setFocusMode} />
+          {/* Wrap Attach and Optimization inside a div for inline display */}
+          <div className="flex items-center gap-2">
             {(!focusMode || focusMode === 'academicSearch') && (
               <Attach
-              fileIds={fileIds}
-              setFileIds={setFileIds}
-              files={files}
-              setFiles={setFiles}
-              showText
-            />
+                fileIds={fileIds}
+                setFileIds={setFileIds}
+                files={files}
+                setFiles={setFiles}
+                showText
+              />
             )}
             {focusMode === 'pipelineSearch' && (
-                <Optimization
-                  optimizationMode={optimizationMode}
-                  setOptimizationMode={setOptimizationMode}
-                />
-              )}
-            <button
-              disabled={message.trim().length === 0}
-              className="bg-[#24A0ED] text-white disabled:text-black/50 dark:disabled:text-white/50 disabled:bg-[#e0e0dc] dark:disabled:bg-[#ececec21] hover:bg-opacity-85 transition duration-100 rounded-full p-2"
-            >
-              <ArrowRight className="bg-background" size={17} />
-            </button>
+              <Optimization
+                optimizationMode={optimizationMode}
+                setOptimizationMode={setOptimizationMode}
+              />
+            )}
           </div>
+
+          <button
+            disabled={!message.trim()}
+            className="bg-blue-500 text-white disabled:bg-gray-300 rounded-full p-2 hover:bg-blue-600 transition"
+          >
+            <ArrowRight size={20} />
+          </button>
         </div>
       </div>
     </form>

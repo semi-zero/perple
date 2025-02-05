@@ -5,20 +5,20 @@ import React, { MutableRefObject, useEffect, useState } from 'react';
 import { Message } from './ChatWindow';
 import { cn } from '@/lib/utils';
 import {
-  BookCopy,
-  Disc3,
+  BookOpen,
+  Loader2,
   Volume2,
   StopCircle,
-  Layers3,
-  Plus,
+  Layers,
+  PlusCircle,
 } from 'lucide-react';
 import Markdown from 'markdown-to-jsx';
 import Copy from './MessageActions/Copy';
 import Rewrite from './MessageActions/Rewrite';
 import MessageSources from './MessageSources';
+import { useSpeech } from 'react-text-to-speech';
 import SearchImages from './SearchImages';
 import SearchVideos from './SearchVideos';
-import { useSpeech } from 'react-text-to-speech';
 
 const MessageBox = ({
   message,
@@ -66,10 +66,10 @@ const MessageBox = ({
   const { speechStatus, start, stop } = useSpeech({ text: speechMessage });
 
   return (
-    <div>
+    <div className="w-full">
       {message.role === 'user' && (
         <div className={cn('w-full', messageIndex === 0 ? 'pt-16' : 'pt-8')}>
-          <h2 className="text-black dark:text-white font-medium text-3xl lg:w-9/12">
+          <h2 className="text-gray-900 dark:text-gray-100 font-semibold text-3xl lg:w-9/12 leading-tight">
             {message.content}
           </h2>
         </div>
@@ -84,37 +84,35 @@ const MessageBox = ({
             {message.sources && message.sources.length > 0 && (
               <div className="flex flex-col space-y-2">
                 <div className="flex flex-row items-center space-x-2">
-                  <BookCopy className="text-black dark:text-white" size={20} />
-                  <h3 className="text-black dark:text-white font-medium text-xl">
+                  <BookOpen className="text-gray-700 dark:text-gray-300" size={20} />
+                  <h3 className="text-gray-800 dark:text-gray-100 font-medium text-xl">
                     출처
                   </h3>
                 </div>
                 <MessageSources sources={message.sources} />
               </div>
             )}
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col space-y-4">
               <div className="flex flex-row items-center space-x-2">
-                <Disc3
-                  className={cn(
-                    'text-black dark:text-white',
-                    isLast && loading ? 'animate-spin' : 'animate-none',
-                  )}
-                  size={20}
-                />
-                <h3 className="text-black dark:text-white font-medium text-xl">
+              {loading && isLast ? (
+                  <Loader2 className="animate-spin text-gray-500 dark:text-gray-400" size={20} />
+                ) : (
+                  <Layers className="text-gray-700 dark:text-gray-300" size={20} />
+                )}
+                <h3 className="text-gray-900 dark:text-gray-100 font-semibold text-lg">
                   답변
                 </h3>
               </div>
               <Markdown
                 className={cn(
-                  'prose prose-h1:mb-3 prose-h2:mb-2 prose-h2:mt-6 prose-h2:font-[800] prose-h3:mt-4 prose-h3:mb-1.5 prose-h3:font-[600] dark:prose-invert prose-p:leading-relaxed prose-pre:p-0 font-[400]',
-                  'max-w-none break-words text-black dark:text-white',
+                  'prose dark:prose-invert max-w-none text-gray-800 dark:text-gray-200',
+                  'leading-relaxed tracking-wide font-sans'
                 )}
               >
                 {parsedMessage}
               </Markdown>
               {loading && isLast ? null : (
-                <div className="flex flex-row items-center justify-between w-full text-black dark:text-white py-4 -mx-2">
+                <div className="flex flex-row items-center justify-between w-full text-gray-800 dark:text-gray-200 py-4 -mx-2">
                   <div className="flex flex-row items-center space-x-1">
                     {/*  <button className="p-2 text-black/70 dark:text-white/70 rounded-xl hover:bg-light-secondary dark:hover:bg-dark-secondary transition duration-200 hover:text-black text-black dark:hover:text-white">
                       <Share size={18} />
@@ -131,7 +129,7 @@ const MessageBox = ({
                           start();
                         }
                       }}
-                      className="p-2 text-black/70 dark:text-white/70 rounded-xl hover:bg-light-secondary dark:hover:bg-dark-secondary transition duration-200 hover:text-black dark:hover:text-white"
+                      className="p-2 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200"
                     >
                       {speechStatus === 'started' ? (
                         <StopCircle size={18} />
@@ -148,31 +146,31 @@ const MessageBox = ({
                 message.role === 'assistant' &&
                 !loading && (
                   <>
-                    <div className="h-px w-full bg-light-secondary dark:bg-dark-secondary" />
-                    <div className="flex flex-col space-y-3 text-black dark:text-white">
+                    <div className="h-px w-full bg-gray-200 dark:bg-gray-700" />
+                    <div className="flex flex-col space-y-3 text-gray-900 dark:text-gray-100">
                       <div className="flex flex-row items-center space-x-2 mt-4">
-                        <Layers3 />
-                        <h3 className="text-xl font-medium">관련</h3>
+                        <Layers />
+                        <h3 className="text-lg font-semibold">관련 질문</h3>
                       </div>
                       <div className="flex flex-col space-y-3">
                         {message.suggestions.map((suggestion, i) => (
                           <div
-                            className="flex flex-col space-y-3 text-sm"
+                            className="flex flex-col space-y-3"
                             key={i}
                           >
-                            <div className="h-px w-full bg-light-secondary dark:bg-dark-secondary" />
+                            <div className="h-px w-full bg-gray-300 dark:bg-gray-600" />
                             <div
                               onClick={() => {
                                 sendMessage(suggestion);
                               }}
-                              className="cursor-pointer flex flex-row justify-between font-medium space-x-2 items-center"
+                              className="cursor-pointer flex flex-row justify-between font-medium space-x-2 items-center transition duration-200 hover:text-blue-500"
                             >
                               <p className="transition duration-200 hover:text-[#24A0ED]">
                                 {suggestion}
                               </p>
-                              <Plus
+                              <PlusCircle
                                 size={20}
-                                className="text-[#24A0ED] flex-shrink-0"
+                                className="text-blue-500" 
                               />
                             </div>
                           </div>

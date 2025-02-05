@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { useSearchParams } from 'next/navigation';
 import { getSuggestions } from '@/lib/actions';
 import Error from 'next/error';
-
+import { motion } from 'framer-motion';
 import SearchSteps from '@/components/SearchSteps';
 
 
