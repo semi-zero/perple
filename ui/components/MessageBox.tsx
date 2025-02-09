@@ -82,17 +82,17 @@ const MessageBox = ({
             className="flex flex-col space-y-6 w-full lg:w-9/12"
           >
             {message.sources && message.sources.length > 0 && (
-              <div className="flex flex-col space-y-2">
+              <div className="flex flex-col space-y-6">
                 <div className="flex flex-row items-center space-x-2">
                   <BookOpen className="text-gray-700 dark:text-gray-300" size={20} />
-                  <h3 className="text-gray-800 dark:text-gray-100 font-medium text-xl">
+                  <h3 className="text-gray-900 dark:text-gray-100 font-semibold text-lg">
                     출처
                   </h3>
                 </div>
                 <MessageSources sources={message.sources} />
               </div>
             )}
-            <div className="flex flex-col space-y-4">
+            <div className="flex flex-col space-y-6">
               <div className="flex flex-row items-center space-x-2">
               {loading && isLast ? (
                   <Loader2 className="animate-spin text-gray-500 dark:text-gray-400" size={20} />

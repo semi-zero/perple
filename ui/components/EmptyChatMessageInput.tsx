@@ -1,23 +1,19 @@
 import { ArrowRight } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, FormEvent } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
-import CopilotToggle from './MessageInputActions/Copilot';
 import Focus from './MessageInputActions/Focus';
 import Optimization from './MessageInputActions/Optimization';
 import Attach from './MessageInputActions/Attach';
+import AcademicSearchFields from './MessageInputActions/AcademicSearchFields'; // <-- 분리된 컴포넌트를 가져옵니다.
 import { File } from './ChatWindow';
 
-const EmptyChatMessageInput = ({
-  sendMessage,
-  focusMode,
-  setFocusMode,
-  optimizationMode,
-  setOptimizationMode,
-  fileIds,
-  setFileIds,
-  files,
-  setFiles,
-}: {
+interface ExtraMessage {
+  field1: string;
+  field2: string;
+  field3: string;
+}
+
+interface EmptyChatMessageInputProps {
   sendMessage: (message: string) => void;
   focusMode: string;
   setFocusMode: (mode: string) => void;
@@ -27,10 +23,27 @@ const EmptyChatMessageInput = ({
   setFileIds: (fileIds: string[]) => void;
   files: File[];
   setFiles: (files: File[]) => void;
-}) => {
+  extraMessage: ExtraMessage;
+  setExtraMessage: React.Dispatch<React.SetStateAction<ExtraMessage>>; 
+}
+
+export default function EmptyChatMessageInput({
+  sendMessage,
+  focusMode,
+  setFocusMode,
+  optimizationMode,
+  setOptimizationMode,
+  fileIds,
+  setFileIds,
+  files,
+  setFiles,
+  extraMessage,
+  setExtraMessage,
+}: EmptyChatMessageInputProps) {
   const [message, setMessage] = useState('');
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // '/' 키 눌렀을 때 자동 포커스
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === '/' && document.activeElement !== inputRef.current) {
@@ -39,19 +52,24 @@ const EmptyChatMessageInput = ({
       }
     };
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+
+    sendMessage(message);
+    setMessage('');
+  };
+
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        sendMessage(message);
-        setMessage('');
-      }}
-      className="w-full"
-    >
-      <div className="flex flex-col bg-white dark:bg-dark-800 shadow-lg rounded-2xl p-4 border border-light-200 dark:border-dark-200">
+    <form onSubmit={handleSubmit} className="w-full">
+      <div className="flex flex-col bg-white dark:bg-dark-800 shadow-lg rounded-3xl p-4 border border-light-200 dark:border-dark-200">
+
         <TextareaAutosize
           ref={inputRef}
           value={message}
@@ -60,10 +78,19 @@ const EmptyChatMessageInput = ({
           className="bg-transparent placeholder-gray-500 dark:placeholder-gray-400 text-lg text-gray-900 dark:text-white resize-none focus:outline-none w-full"
           placeholder="무엇을 도와드릴까요?"
         />
-        <div className="flex items-center justify-between mt-4">
+
+        {/* agentSimulator 모드일 때만 학술 검색 정보 섹션 렌더링 */}
+        {focusMode === 'agentSimulator' && (
+          <AcademicSearchFields
+            extraMessage={extraMessage}
+            setExtraMessage={setExtraMessage}
+          />
+        )}
+
+        <div className="flex flex-row items-center space-x-2 mt-4 lg:space-x-4">
           <Focus focusMode={focusMode} setFocusMode={setFocusMode} />
-          {/* Wrap Attach and Optimization inside a div for inline display */}
-          <div className="flex items-center gap-2">
+
+          <div className="flex flex-row items-center space-x-1 sm:space-x-4">
             {(!focusMode || focusMode === 'academicSearch') && (
               <Attach
                 fileIds={fileIds}
@@ -77,6 +104,7 @@ const EmptyChatMessageInput = ({
               <Optimization
                 optimizationMode={optimizationMode}
                 setOptimizationMode={setOptimizationMode}
+                focusMode={focusMode}
               />
             )}
           </div>
@@ -91,6 +119,4 @@ const EmptyChatMessageInput = ({
       </div>
     </form>
   );
-};
-
-export default EmptyChatMessageInput;
+}

@@ -76,7 +76,7 @@ const MessageInput = ({
         }
       }}
       className={cn(
-        'bg-[#F8F9FA] dark:bg-[#1E1E1E] p-4 flex items-center overflow-hidden border border-[#DCE1E6] dark:border-[#2C2C2C]',
+        'flex flex-col bg-white dark:bg-dark-800 shadow-lg rounded-2xl p-4 border border-light-200 dark:border-dark-200',
         mode === 'multi' ? 'flex-col rounded-lg' : 'flex-row rounded-full',
       )}
     >
@@ -107,14 +107,14 @@ const MessageInput = ({
           /> */}
           <button
             disabled={message.trim().length === 0 || loading}
-            className="bg-[#A7C7E7] text-white disabled:text-gray-300 dark:disabled:text-gray-500 hover:bg-[#8FAACC] transition duration-100 disabled:bg-gray-200 dark:disabled:bg-gray-700 rounded-full p-2"
+            className="bg-blue-500 text-white disabled:text-gray-300 dark:disabled:text-gray-500 hover:bg-blue-600 transition duration-100 disabled:bg-gray-200 dark:disabled:bg-gray-700 rounded-full p-2"
           >
             <ArrowUp className="bg-background" size={17} />
           </button>
         </div>
       )}
       {mode === 'multi' && (
-        <div className="flex flex-row items-center justify-between w-full pt-2">
+        <div className="flex flex-row items-center justify-end w-full pt-2 space-x-4">
           {focusMode === 'academicSearch' && (
             <AttachSmall
               fileIds={fileIds}
@@ -130,7 +130,7 @@ const MessageInput = ({
             /> */}
             <button
               disabled={message.trim().length === 0 || loading}
-              className="bg-[#A7C7E7] text-white disabled:text-gray-300 dark:disabled:text-gray-500 hover:bg-[#8FAACC] transition duration-100 disabled:bg-gray-200 dark:disabled:bg-gray-700 rounded-full p-2"
+              className="bg-blue-500 text-white disabled:text-gray-300 dark:disabled:text-gray-500 hover:bg-blue-600 transition duration-100 disabled:bg-gray-200 dark:disabled:bg-gray-700 rounded-full p-2"
             >
               <ArrowUp size={17} />
             </button>

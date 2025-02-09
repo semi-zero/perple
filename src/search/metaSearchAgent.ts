@@ -32,7 +32,7 @@ export interface MetaSearchAgentType {
     history: BaseMessage[],
     llm: BaseChatModel,
     embeddings: Embeddings,
-    optimizationMode: 'speed' | 'balanced' | 'quality',
+    optimizationMode: string,
     fileIds: string[],
   ) => Promise<eventEmitter>;
 }
@@ -249,7 +249,7 @@ class MetaSearchAgent implements MetaSearchAgentType {
     llm: BaseChatModel,
     fileIds: string[],
     embeddings: Embeddings,
-    optimizationMode: 'speed' | 'balanced' | 'quality',
+    optimizationMode: string,
   ) {
 
     // local_experiment
@@ -455,7 +455,7 @@ class MetaSearchAgent implements MetaSearchAgentType {
     docs: Document[],
     fileIds: string[],
     embeddings: Embeddings,
-    optimizationMode: 'speed' | 'balanced' | 'quality',
+    optimizationMode: string,
   ) {
     console.log('[rerankDocs] Starting reranking');
     console.log('[rerankDocs] Query:', query);
@@ -691,7 +691,7 @@ class MetaSearchAgent implements MetaSearchAgentType {
     history: BaseMessage[],
     llm: BaseChatModel,
     embeddings: Embeddings,
-    optimizationMode: 'speed' | 'balanced' | 'quality',
+    optimizationMode: string,
     fileIds: string[],
   ) {
     console.log('\n[searchAndAnswer] Starting new search');

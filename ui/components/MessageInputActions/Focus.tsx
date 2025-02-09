@@ -5,6 +5,7 @@ import {
   Pencil,
   ScanEye,
   SwatchBook,
+  Atom 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -40,6 +41,12 @@ export const focusModes = [
     title: '논문 검색',
     description: '최신 배터리 논문 검색',
     icon: <SwatchBook size={20} />,
+  },
+  {
+    key: 'agentSimulator',
+    title: '시뮬레이터 작동',
+    description: '시뮬레이션 실행',
+    icon: <Atom size={20} />,
   },
   // {
   //   key: 'wolframAlphaSearch',
@@ -98,7 +105,7 @@ const Focus = ({
         leaveFrom="opacity-100 translate-y-0"
         leaveTo="opacity-0 translate-y-1"
       >
-        <PopoverPanel className="absolute z-10 w-full left-0">
+        <PopoverPanel className="absolute z-10 w-64 md:w-[500px] left-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 bg-white dark:bg-dark-800 border rounded-2xl border-light-200 dark:border-dark-200 w-full p-4 max-h-[200px] md:max-h-none overflow-y-auto">
             {focusModes.map((mode, i) => (
               <PopoverButton

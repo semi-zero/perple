@@ -27,25 +27,72 @@ const OptimizationModes = [
     description: 'Get the most thorough and accurate answer',
     icon: (
       <Star
-        size={16}
+        size={20}
+        className="text-[#2196F3] dark:text-[#BBDEFB] fill-[#BBDEFB] dark:fill-[#2196F3]"
+      />
+    ),
+  },
+  {
+    key: 'rnd',
+    title: 'DGS',
+    description: '연구소 DGS 데이터',
+    icon: (
+      <Star
+        size={20}
+        className="text-[#2196F3] dark:text-[#BBDEFB] fill-[#BBDEFB] dark:fill-[#2196F3]"
+      />
+    ),
+  },
+  {
+    key: 'sb',
+    title: 'SB',
+    description: '소형 개발실 R&D 데이터',
+    icon: (
+      <Star
+        size={20}
+        className="text-[#2196F3] dark:text-[#BBDEFB] fill-[#BBDEFB] dark:fill-[#2196F3]"
+      />
+    ),
+  },
+  {
+    key: 'aeb',
+    title: 'AEB',
+    description: '중대형 개발실 R&D 데이터',
+    icon: (
+      <Star
+        size={20}
         className="text-[#2196F3] dark:text-[#BBDEFB] fill-[#BBDEFB] dark:fill-[#2196F3]"
       />
     ),
   },
 ];
 
+const getOptimizationModesByFocusMode = (focusMode: string) => {
+  switch (focusMode) {
+    case 'academicSearch':
+      return OptimizationModes.filter(mode => ['speed', 'balanced'].includes(mode.key));
+    case 'pipelineSearch':
+      return OptimizationModes.filter(mode => ['rnd', 'sb', 'aeb'].includes(mode.key)); // 모든 모드 표시
+    default:
+      return OptimizationModes;
+  }
+};
+
 const Optimization = ({
   optimizationMode,
   setOptimizationMode,
+  focusMode,
 }: {
   optimizationMode: string;
   setOptimizationMode: (mode: string) => void;
+  focusMode: string;
 }) => {
+  const filteredModes = getOptimizationModesByFocusMode(focusMode);
   return (
-    <Popover className="relative w-full max-w-[15rem] md:max-w-md lg:max-w-lg">
+    <Popover className="relative">
       <PopoverButton
         type="button"
-        className="p-2 text-black/50 dark:text-white/50 rounded-xl hover:bg-light-secondary dark:hover:bg-dark-secondary active:scale-95 transition duration-200 hover:text-black dark:hover:text-white"
+        className="text-gray-900 dark:text-white bg-white dark:bg-dark-800 rounded-2xl p-2 border border-light-200 dark:border-dark-200 dark:border-dark-200 hover:bg-light-secondary dark:hover:bg-dark-secondary active:scale-95 transition duration-200"
       >
         <div className="flex flex-row items-center space-x-1">
           {
@@ -70,19 +117,17 @@ const Optimization = ({
         leaveFrom="opacity-100 translate-y-0"
         leaveTo="opacity-0 translate-y-1"
       >
-        <PopoverPanel className="absolute z-10 w-64 md:w-[250px] right-0">
-          <div className="flex flex-col gap-2 bg-light-primary dark:bg-dark-primary border rounded-lg border-light-200 dark:border-dark-200 w-full p-4 max-h-[200px] md:max-h-none overflow-y-auto">
-            {OptimizationModes.map((mode, i) => (
+        <PopoverPanel className="absolute z-10 w-64 md:w-[200px] left-0">
+          <div className="flex flex-col gap-2 bg-white dark:bg-dark-800 border rounded-2xl border-light-200 dark:border-dark-200 w-full p-4 max-h-[200px] md:max-h-none overflow-y-auto">
+            {filteredModes.map((mode, i) => (
               <PopoverButton
                 onClick={() => setOptimizationMode(mode.key)}
                 key={i}
-                disabled={mode.key === 'quality'}
                 className={cn(
-                  'p-2 rounded-lg flex flex-col items-start justify-start text-start space-y-1 duration-200 cursor-pointer transition',
+                  'p-2 rounded-lg flex flex-col items-start justify-start text-start space-y-2 duration-200 cursor-pointer transition ',
                   optimizationMode === mode.key
-                    ? 'bg-light-secondary dark:bg-dark-secondary'
-                    : 'hover:bg-light-secondary dark:hover:bg-dark-secondary',
-                  mode.key === 'quality' && 'opacity-50 cursor-not-allowed',
+                  ? 'bg-gray-200 dark:bg-gray-700 text-black dark:text-black'
+                  : 'hover:bg-light-secondary dark:hover:bg-dark-secondary',
                 )}
               >
                 <div className="flex flex-row items-center space-x-1 text-black dark:text-white">

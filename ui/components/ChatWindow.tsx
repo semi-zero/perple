@@ -341,12 +341,18 @@ const ChatWindow = ({ id }: { id?: string }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [fileIds, setFileIds] = useState<string[]>([]);
 
-  const [focusMode, setFocusMode] = useState('webSearch');
-  const [optimizationMode, setOptimizationMode] = useState('speed');
+  const [focusMode, setFocusMode] = useState('writingAssistant');
+  const [optimizationMode, setOptimizationMode] = useState('rnd');
 
   const [isMessagesLoaded, setIsMessagesLoaded] = useState(false);
 
   const [notFound, setNotFound] = useState(false);
+
+  const [extraMessage, setExtraMessage] = useState({
+    field1: '',
+    field2: '',
+    field3: '',
+  });
 
   // 더미 검색 단계 데이터를 관리하기 위한 상태
   interface SearchStep {
@@ -662,6 +668,8 @@ const ChatWindow = ({ id }: { id?: string }) => {
             setFileIds={setFileIds}
             files={files}
             setFiles={setFiles}
+            extraMessage={extraMessage}
+            setExtraMessage={setExtraMessage}
           />
         )}
       </div>

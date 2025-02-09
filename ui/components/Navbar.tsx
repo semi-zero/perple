@@ -52,14 +52,14 @@ const Navbar = ({
   }, [messages]);
 
   return (
-    <div className="fixed z-50 top-0 left-20 right-0 px-4 flex flex-row items-center justify-between w-full py-3 text-sm text-black dark:text-white/70 border-b bg-white/80 dark:bg-dark-primary/80 backdrop-blur-md shadow-md">
+    <div className="fixed z-40 top-2 left-20 right-0 px-4 lg:pl-48 lg:pr-6 lg:px-8 flex flex-row items-center justify-between w-full py-3 text-sm text-black dark:text-white/70 border-b bg-white/80 dark:bg-dark-primary/80 backdrop-blur-md shadow-md">
       <div className="flex items-center space-x-2">
         <Clock size={16} />
         <p className="text-sm font-medium">{getModeTitle(mode)}</p>
       </div>
       <p className="text-sm font-semibold truncate w-1/2 text-center">{title}</p>
       <div className="flex flex-row items-center space-x-3">
-        <button className="p-2 bg-gray-200 dark:bg-dark-300 rounded-full hover:scale-105 transition-transform">
+        <button className="p-2 bg-white/80 dark:bg-dark-300 rounded-full hover:scale-105 hover:bg-gray-200 transition-transform">
           <Share size={16} />
         </button>
         <DeleteChat redirect chatId={chatId} chats={[]} setChats={() => {}} />

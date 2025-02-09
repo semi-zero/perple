@@ -22,7 +22,7 @@ type Message = {
 
 type WSMessage = {
   message: Message;
-  optimizationMode: 'speed' | 'balanced' | 'quality';
+  optimizationMode: string;
   type: string;
   focusMode: string;
   history: Array<[string, string]>;

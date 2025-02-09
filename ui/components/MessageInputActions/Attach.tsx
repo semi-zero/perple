@@ -55,7 +55,7 @@ const Attach = ({
 
   return loading ? (
     <div className="flex flex-row items-center justify-between space-x-1">
-      <LoaderCircle size={18} className="text-sky-400 animate-spin" />
+      <LoaderCircle size={18} className="text-blue-500 animate-spin" />
       <p className="text-sky-400 inline whitespace-nowrap text-xs font-medium">
         Uploading..
       </p>
@@ -71,8 +71,8 @@ const Attach = ({
       >
         {files.length > 1 && (
           <>
-            <File size={19} className="text-sky-400" />
-            <p className="text-sky-400 inline whitespace-nowrap text-xs font-medium">
+            <File size={19} className="text-blue-500" />
+            <p className="text-blue-500 inline whitespace-nowrap text-xs font-medium">
               {files.length} files
             </p>
           </>
@@ -80,8 +80,8 @@ const Attach = ({
 
         {files.length === 1 && (
           <>
-            <File size={18} className="text-sky-400" />
-            <p className="text-sky-400 text-xs font-medium">
+            <File size={18} className="text-blue-500" />
+            <p className="text-blue-500 text-xs font-medium">
               {files[0].fileName.length > 10
                 ? files[0].fileName.replace(/\.\w+$/, '').substring(0, 3) +
                   '...' +
