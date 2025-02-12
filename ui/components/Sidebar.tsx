@@ -188,9 +188,11 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
                 <FolderKanban className="h-5 w-5 text-black dark:text-black" /> 공간
               </h2>
             </a>
-            <h2 className="p-2 text-base font-semibold mb-2 flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-black dark:text-black" /> 도서관
-            </h2>
+            <Link href="/library">
+              <h2 className="p-2 text-base font-semibold mb-2 flex items-center gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
+                <BookOpen className="h-5 w-5 text-black dark:text-black" /> 도서관
+              </h2>
+            </Link>
 
             <div className="flex flex-col gap-1 ml-3 pl-2 border-l-2 border-gray-300 dark:border-gray-600 ">
               {chats.length > 0 ? (

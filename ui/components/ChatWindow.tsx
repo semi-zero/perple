@@ -354,6 +354,14 @@ const ChatWindow = ({ id }: { id?: string }) => {
     field3: '',
   });
 
+  // 더미 유저 데이터 추가
+  const dummyUserData = {
+    id: "550e8400-e29b-41d4-a716-446655440000",
+    name: "테스트 사용자",
+    department: "개발팀",
+    email: "test@example.com"
+  };
+
   // 더미 검색 단계 데이터를 관리하기 위한 상태
   interface SearchStep {
     type: 'search' | 'processing' | 'complete';
@@ -477,6 +485,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
           messageId: messageId,
           chatId: chatId!,
           content: message,
+          userId: dummyUserData.id, // 더미 유저 ID 추가
         },
         files: fileIds,
         focusMode: focusMode,

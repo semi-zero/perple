@@ -18,6 +18,7 @@ type Message = {
   messageId: string;
   chatId: string;
   content: string;
+  userId: string;
 };
 
 type WSMessage = {
@@ -219,6 +220,7 @@ export const handleMessage = async (
                 createdAt: new Date().toString(),
                 focusMode: parsedWSMessage.focusMode,
                 files: parsedWSMessage.files.map(getFileDetails),
+                userId: parsedMessage.userId  // userId 추가 (필수 필드)
               } as ChatsInsert)
               .execute();
           }

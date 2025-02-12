@@ -16,6 +16,7 @@ export interface Chat {
 const Page = () => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -36,6 +37,10 @@ const Page = () => {
 
     fetchChats();
   }, []);
+
+  const filteredChats = chats.filter(chat => 
+    chat.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return loading ? (
     <div className="flex flex-row items-center justify-center min-h-screen">
@@ -63,22 +68,29 @@ const Page = () => {
           <BookOpenText />
           <h1 className="text-3xl font-medium p-2">Library</h1>
         </div>
+        <input 
+          type="text" 
+          placeholder="Search threads..." 
+          value={searchQuery} 
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="mt-4 p-2 border rounded-lg w-full"
+        />
         <hr className="border-t border-[#2B2C2C] my-4 w-full" />
       </div>
-      {chats.length === 0 && (
+      {filteredChats.length === 0 && (
         <div className="flex flex-row items-center justify-center min-h-screen">
           <p className="text-black/70 dark:text-white/70 text-sm">
             No chats found.
           </p>
         </div>
       )}
-      {chats.length > 0 && (
+      {filteredChats.length > 0 && (
         <div className="flex flex-col pb-20 lg:pb-2">
-          {chats.map((chat, i) => (
+          {filteredChats.map((chat, i) => (
             <div
               className={cn(
                 'flex flex-col space-y-4 py-6',
-                i !== chats.length - 1
+                i !== filteredChats.length - 1
                   ? 'border-b border-white-200 dark:border-dark-200'
                   : '',
               )}
