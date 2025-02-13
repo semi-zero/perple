@@ -15,6 +15,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Layout from './Layout';
+import SettingsDialog from './SettingsDialog';
 
 export interface Chat {
   id: string;
@@ -25,6 +26,9 @@ export interface Chat {
 
 const Sidebar = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
+
+  //설정 모달
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // 검색 모달
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -117,6 +121,17 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
       document.removeEventListener('click', handleClickOutside);
     };
   }, [actionModal.open]);
+
+  // 바깥 클릭 시 설정 메뉴 닫기
+  useEffect(() => {
+    const handleClickSettingDialogOutside = () => {
+      if (isSettingsOpen) setIsSettingsOpen(false);
+    };
+    document.addEventListener('click', handleClickSettingDialogOutside);
+    return () => {
+      document.removeEventListener('click', handleClickSettingDialogOutside);
+    };
+  }, [isSettingsOpen]);
 
   // 검색 모달 열고 닫기
   const openSearchModal = () => {
@@ -223,11 +238,23 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
             </div>
           </div>
 
-          {/* 설정 버튼 */}
+          {/* 사용자 설정 버튼 */}
           <div className="border-t border-gray-300 dark:border-gray-600 py-1 px-1 flex">
             <div className="flex w-full items-center p-3 gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200 cursor-pointer">
               <Settings className="h-5 w-5" />
-              <span>설정</span>
+              <span>사용자 설정</span>
+            </div>
+          </div>
+          {/* 관리자 설정 버튼 */}
+          <div onClick={()=>setIsSettingsOpen(!isSettingsOpen)}
+          className="border-t border-gray-300 dark:border-gray-600 py-1 px-1 flex">
+            <div className="flex w-full items-center p-3 gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200 cursor-pointer">
+              <Settings className="h-5 w-5" />
+              <SettingsDialog
+              isOpen={isSettingsOpen}
+              setIsOpen={setIsSettingsOpen}
+              />
+              <span>관리자 설정</span>
             </div>
           </div>
         </div>
