@@ -174,7 +174,7 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="lg:flex">
       {/* ------------ 사이드바 영역 ------------ */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col bg-gray-50 dark:bg-dark-primary/80 px-4 py-4 rounded-lg backdrop-blur-md shadow-lg h-full overflow-y-auto">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col bg-gray-40 dark:bg-dark-primary/80 px-4 py-4 rounded-lg backdrop-blur-md shadow-lg h-full overflow-y-auto">
         <div className="flex flex-col h-full">
           {/* 상단 버튼들 */}
           <div className="flex justify-end items-center">
@@ -194,18 +194,18 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
           {/* Links & 채팅 목록 */}
           <div className="mt-4 flex-grow">
             <a href="/">
-              <h2 className="p-2 text-base font-semibold mb-3 flex items-center gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
-                <Home className="h-5 w-5 text-black dark:text-black" /> 홈
+              <h2 className="p-2 text-base mb-3 flex items-center gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
+                <Home className="h-5 w-5 text-black dark:text-black" /> Home
               </h2>
             </a>
             <a href="/">
-              <h2 className="p-2 text-base font-semibold mb-3 flex items-center gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
-                <FolderKanban className="h-5 w-5 text-black dark:text-black" /> 공간
+              <h2 className="p-2 text-base mb-3 flex items-center gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
+                <FolderKanban className="h-5 w-5 text-black dark:text-black" /> Space
               </h2>
             </a>
             <Link href="/library">
-              <h2 className="p-2 text-base font-semibold mb-2 flex items-center gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
-                <BookOpen className="h-5 w-5 text-black dark:text-black" /> 도서관
+              <h2 className="p-2 text-base mb-2 flex items-center gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
+                <BookOpen className="h-5 w-5 text-black dark:text-black" /> Library
               </h2>
             </Link>
 

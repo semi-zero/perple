@@ -52,7 +52,8 @@ const Navbar = ({
   }, [messages]);
 
   return (
-    <div className="fixed z-40 top-2 left-20 right-0 px-4 lg:pl-48 lg:pr-6 lg:px-8 flex flex-row items-center justify-between w-full py-3 text-sm text-black dark:text-white/70 border-b bg-white/80 dark:bg-dark-primary/80 backdrop-blur-md shadow-md">
+    <div className="fixed top-0 left-60 right-0 px-4 lg:pl-[60px] lg:pr-[60px] lg:px-4 flex flex-row items-center justify-between py-3 
+    text-sm text-black dark:text-white/80 border-b bg-white/80 dark:bg-dark-primary/80 backdrop-blur-md shadow-md">
       <div className="flex items-center space-x-2">
         <Clock size={16} />
         <p className="text-sm font-medium">{getModeTitle(mode)}</p>

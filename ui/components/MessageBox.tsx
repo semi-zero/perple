@@ -106,7 +106,7 @@ const MessageBox = ({
               <Markdown
                 className={cn(
                   'prose dark:prose-invert max-w-none text-gray-800 dark:text-gray-200',
-                  'leading-relaxed tracking-wide font-sans'
+                  'leading-relaxed tracking-wide'
                 )}
               >
                 {parsedMessage}
