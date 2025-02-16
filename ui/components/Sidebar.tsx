@@ -193,16 +193,16 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
 
           {/* Links & 채팅 목록 */}
           <div className="mt-4 flex-grow">
-            <a href="/">
+            <Link href="/">
               <h2 className="p-2 text-base mb-3 flex items-center gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
                 <Home className="h-5 w-5 text-black dark:text-black" /> Home
               </h2>
-            </a>
-            <a href="/">
+            </Link>
+            <Link href="/spaceMain">
               <h2 className="p-2 text-base mb-3 flex items-center gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
                 <FolderKanban className="h-5 w-5 text-black dark:text-black" /> Space
               </h2>
-            </a>
+              </Link>
             <Link href="/library">
               <h2 className="p-2 text-base mb-2 flex items-center gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
                 <BookOpen className="h-5 w-5 text-black dark:text-black" /> Library

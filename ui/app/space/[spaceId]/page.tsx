@@ -4,10 +4,9 @@ import DeleteChat from '@/components/DeleteChat';
 import { cn, formatTimeDifference } from '@/lib/utils';
 import { BookOpenText, ClockIcon, Ellipsis, Plus, Menu } from 'lucide-react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { space } from 'postcss/lib/list';
 import { useEffect, useState } from 'react';
-
-import { SpaceSelectionModal } from '@/components/SpaceSelectionModal';
-import { toast } from 'sonner';
 
 export interface Chat {
   id: string;
@@ -16,16 +15,22 @@ export interface Chat {
   focusMode: string;
 }
 
+interface SpaceItem {
+  id: string;          // DB의 space.id
+  spaceName: string;   // DB의 space.spaceName
+  createdAt?: string;  // (있다면) 생성시간
+  updatedAt?: string;  // (있다면) 수정시간
+}
+
 const Page = () => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 상태 추가
-  const [showSpaceModal, setShowSpaceModal] = useState<{
-    open: boolean;
-    chatId: string | null;
-  }>({ open: false, chatId: null });
+  const { spaceId } = useParams(); // Next.js 13+ App Router 환경에서 사용
+  //const { spaceId } = router.query; // URL 경로에서 spaceId 가져오기
+
+  const [spaces, setSpaces] = useState<SpaceItem[]>([]);
 
   // Action menu
   const [actionModal, setActionModal] = useState<{
@@ -108,56 +113,38 @@ const Page = () => {
 
   useEffect(() => {
     const fetchChats = async () => {
+      if (!spaceId) return; // spaceId가 없으면 API 호출 안 함
+  
       setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chats`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const data = await res.json();
-      setChats(data.chats);
-      setLoading(false);
+      try {
+        // console.log('Fetching chats for spaceId:', spaceId);
+  
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/spaces/${spaceId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+  
+        if (!res.ok) {
+          throw new Error(`Failed to fetch chats: ${res.status}`);
+        }
+  
+        const data = await res.json();
+        console.log('[useEffect] data:', data)
+        setChats(data.chats); // 응답에서 chats 데이터만 저장
+        setSpaces(data.space);
+      } catch (error) {
+        console.error('Error fetching chats:', error);
+      } finally {
+        setLoading(false);
+      }
     };
+  
     fetchChats();
-  }, []);
+  }, [spaceId]); // spaceId가 변경될 때마다 실행
 
   const filteredChats = chats.filter(chat => 
     chat.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
-  const openSpaceSelectionModal = (chatId: string) => {
-    setShowSpaceModal({ open: true, chatId });
-    closeActionModal();
-  };
-
-  const closeSpaceSelectionModal = () => {
-    setShowSpaceModal({ open: false, chatId: null });
-  };
-
-  // 채팅을 공간에 추가하는 함수
-  const addChatToSpace = async (spaceId: string, chatId: string) => {
-    try {
-      console.log('[addChatToSpace] spaceId:', spaceId)
-      console.log('[addChatToSpace] chatId:', chatId)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/spaces/${spaceId}/chats`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ chatIds: [chatId] }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error('채팅을 공간에 추가하는데 실패했습니다.');
-      }
-      
-      toast.success('채팅이 공간에 추가되었습니다.');
-      closeActionModal(); // 성공 후 모달 닫기 추가
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : '오류가 발생했습니다.');
-      console.error(error);
-    }
-  };
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10 min-h-screen flex flex-col">
@@ -166,7 +153,7 @@ const Page = () => {
       mt-4 py-4 px-6 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <BookOpenText className="w-7 h-7 text-gray-700 dark:text-gray-300" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">도서관</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{spaces.spaceName}</h1>
         </div>
         <input
           type="text"
@@ -267,9 +254,9 @@ const Page = () => {
             <li>
               <button
                 className="w-full text-left px-1 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md"
-                onClick={() => openSpaceSelectionModal(actionModal.chatId!)}
+                onClick={closeActionModal}
               >
-                공간에 추가
+                아카이브에 보관
               </button>
             </li>
             <li>
@@ -282,18 +269,6 @@ const Page = () => {
             </li>
           </ul>
         </div>
-      )}
-
-      {/* 공간 선택 모달 */}
-      {showSpaceModal.open && (
-        <SpaceSelectionModal
-          onClose={closeSpaceSelectionModal}  // () => 제거
-          chatId={showSpaceModal.chatId ?? ''} // null 체크 추가
-          onSelect={async (spaceId, chatId) => {
-            await addChatToSpace(spaceId, chatId);
-            closeSpaceSelectionModal();
-          }}
-        />
       )}
 
       {/* ------------ 채팅 삭제 확인 모달 ------------ */}
