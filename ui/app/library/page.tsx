@@ -160,10 +160,10 @@ const Page = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10 min-h-screen flex flex-col">
+    <div className="max-w-6xl mx-auto min-h-screen flex flex-col">
       {/* 고정된 상단 바 */}
       <div className="sticky top-0 left-0 w-full bg-white dark:bg-gray-900 z-10 shadow-sm 
-      mt-4 py-4 px-6 flex items-center justify-between">
+      mt-4 py-6 px-6 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <BookOpenText className="w-7 h-7 text-gray-700 dark:text-gray-300" />
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">도서관</h1>
