@@ -216,7 +216,7 @@ export const handleMessage = async (
               .insert(chats)
               .values({
                 id: parsedMessage.chatId,
-                title: parsedMessage.content,
+                title: parsedMessage.content.length > 12 ? parsedMessage.content.slice(0,12)+"...": parsedMessage.content,
                 createdAt: new Date().toString(),
                 focusMode: parsedWSMessage.focusMode,
                 files: parsedWSMessage.files.map(getFileDetails),

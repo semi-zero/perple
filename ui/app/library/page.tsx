@@ -2,7 +2,7 @@
 
 import DeleteChat from '@/components/DeleteChat';
 import { cn, formatTimeDifference } from '@/lib/utils';
-import { BookOpenText, ClockIcon, Ellipsis, Plus, Menu } from 'lucide-react';
+import { BookOpenText, ClockIcon, Ellipsis, SquarePen, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -183,9 +183,11 @@ const Page = () => {
           <Menu className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">스레드</h2>
         </div>
-        <button className="p-2 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">
-          <Plus className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-        </button>
+        <Link href="/">
+          <h2 className="p-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">
+            <SquarePen className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+          </h2>
+        </Link>
       </div>
 
       {/* 채팅 리스트 */}

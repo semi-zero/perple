@@ -10,7 +10,7 @@ const Rewrite = ({
   return (
     <button
       onClick={() => rewrite(messageId)}
-      className="py-2 px-3 text-black/70 dark:text-white/70 rounded-xl hover:bg-light-secondary dark:hover:bg-dark-secondary transition duration-200 hover:text-black dark:hover:text-white flex flex-row items-center space-x-1"
+      className="p-2 text-gray-600 dark:text--gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200 flex flex-row items-center space-x-1"
     >
       <ArrowLeftRight size={18} />
       <p className="text-xs font-medium">다시쓰기</p>

@@ -58,16 +58,30 @@ export default function EmptyChatMessageInput({
     };
   }, []);
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!message.trim()) return;
+  // const handleSubmit = (e: FormEvent) => {
+  //   e.preventDefault();
+  //   if (!message.trim()) return;
 
-    sendMessage(message);
-    setMessage('');
-  };
+  //   sendMessage(message);
+  //   setMessage('');
+  // };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        sendMessage(message);
+        setMessage('');
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage(message);
+          setMessage('');
+        }
+      }}
+      className="w-full"
+    >
       <div className="flex flex-col bg-white dark:bg-dark-800 shadow-lg rounded-3xl p-4 border border-light-200 dark:border-dark-200">
 
         <TextareaAutosize

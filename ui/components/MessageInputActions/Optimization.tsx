@@ -92,7 +92,7 @@ const Optimization = ({
     <Popover className="relative">
       <PopoverButton
         type="button"
-        className="text-gray-900 dark:text-white bg-white dark:bg-dark-800 rounded-2xl p-2 border border-light-200 dark:border-dark-200 dark:border-dark-200 hover:bg-light-secondary dark:hover:bg-dark-secondary active:scale-95 transition duration-200"
+        className="text-gray-900 dark:text-white bg-white dark:bg-dark-800 rounded-2xl p-2 border border-light-200 dark:border-dark-200 dark:border-dark-200 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition duration-200"
       >
         <div className="flex flex-row items-center space-x-1">
           {
@@ -127,7 +127,7 @@ const Optimization = ({
                   'p-2 rounded-lg flex flex-col items-start justify-start text-start space-y-2 duration-200 cursor-pointer transition ',
                   optimizationMode === mode.key
                   ? 'bg-gray-200 dark:bg-gray-700 text-black dark:text-black'
-                  : 'hover:bg-light-secondary dark:hover:bg-dark-secondary',
+                  : 'hover:bg-gray-200 dark:hover:bg-gray-700',
                 )}
               >
                 <div className="flex flex-row items-center space-x-1 text-black dark:text-white">

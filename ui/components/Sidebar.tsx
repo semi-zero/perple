@@ -9,8 +9,10 @@ import {
   Home, 
   FolderKanban, 
   Ellipsis, 
+  CircleUserRound ,
   MessageCircleMore , // 채팅 아이콘으로 사용
-  X // 닫기 버튼 (Close icon)
+  X, // 닫기 버튼 (Close icon)
+  PanelsLeftBottom // 메뉴 아이콘 (Menu icon)
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -62,14 +64,14 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
         if (!res.ok) throw new Error('Failed to fetch chats');
         const data = await res.json();
         // 원하시는 만큼만 잘라서 저장
-        setChats(data.chats.slice(0, 5));
+        setChats(data.chats);
       } catch (error) {
         console.error(error);
       }
     };
 
     fetchChats();
-  }, []);
+  }, [chats]);
 
   // 액션 메뉴 (점 세 개) 제어
   const handleActionClick = (e: React.MouseEvent, chatId: string) => {
@@ -171,47 +173,89 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
     return `${year}-${month}-${day} ${hour}:${min}`;
   };
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // 사이드바 상태 추가
+
   return (
     <div className="lg:flex">
       {/* ------------ 사이드바 영역 ------------ */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col bg-gray-40 dark:bg-dark-primary/80 px-4 py-4 rounded-lg backdrop-blur-md shadow-lg h-full overflow-y-auto">
-        <div className="flex flex-col h-full">
+      {/* 사이드바 영역 - 동적 클래스 적용 */}
+      <div className={`hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col bg-gray-40 dark:bg-dark-primary/80 px-4 py-4 rounded-lg backdrop-blur-md shadow-lg h-full overflow-y-auto transition-all duration-300 ${
+        isSidebarOpen ? 'lg:w-64' : 'lg:w-24 flex items-center'
+      }`}>
+        <div className="flex flex-col h-full items-center w-full">
           {/* 상단 버튼들 */}
-          <div className="flex justify-end items-center">
+          <div className={`flex ${isSidebarOpen ? 'justify-between' : 'flex-col gap-2'} items-center w-full`}>
             <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-2.5 cursor-pointer rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200"
-              onClick={openSearchModal}
             >
-              <Search className="h-5 w-5" />
+              <PanelsLeftBottom className="h-5 w-5" />
             </button>
-            <a href="/">
-              <button className="p-2.5 cursor-pointer rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
-                <SquarePen className="h-5 w-5" />
+            <div className={`flex ${isSidebarOpen ? 'items-center' : 'flex-col gap-2'}`}>
+              <button
+                className="p-2.5 cursor-pointer rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200"
+                onClick={openSearchModal}
+              >
+                <Search className="h-5 w-5" />
               </button>
-            </a>
+              <Link href="/">
+                <button className="p-2.5 cursor-pointer rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
+                  <SquarePen className="h-5 w-5" />
+                </button>
+              </Link>
+            </div>
           </div>
 
           {/* Links & 채팅 목록 */}
-          <div className="mt-4 flex-grow">
+          <div className="mt-4 flex-grow w-full">
             <Link href="/">
-              <h2 className="p-2 text-base mb-3 flex items-center gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
-                <Home className="h-5 w-5 text-black dark:text-black" /> Home
+              <h2 className={`text-base flex items-center ${
+                isSidebarOpen 
+                  ? 'justify-start gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 mb-3 p-2' 
+                  : 'justify-center p-1'
+              } transition duration-200`}>    
+                <div className={`${
+                  !isSidebarOpen ? 'p-2.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700' : ''
+                }`}>
+                  <Home className="h-5 w-5 text-blue-500 dark:text-black" />
+                </div>
+                <span className={`${isSidebarOpen ? 'block' : 'hidden'}`}>Home</span>
               </h2>
             </Link>
             <Link href="/spaceMain">
-              <h2 className="p-2 text-base mb-3 flex items-center gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
-                <FolderKanban className="h-5 w-5 text-black dark:text-black" /> Space
+              <h2 className={` text-base flex items-center ${
+                isSidebarOpen 
+                  ? 'justify-start gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 mb-3 p-2' 
+                  : 'justify-center p-1'
+              } transition duration-200`}>    
+                <div className={`${
+                  !isSidebarOpen ? 'p-2.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700' : ''
+                }`}>
+                  <FolderKanban className="h-5 w-5 text-blue-500 dark:text-black" />
+                </div>
+                <span className={`${isSidebarOpen ? 'block' : 'hidden'}`}>Space</span>
               </h2>
-              </Link>
+            </Link>
             <Link href="/library">
-              <h2 className="p-2 text-base mb-2 flex items-center gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
-                <BookOpen className="h-5 w-5 text-black dark:text-black" /> Library
+              <h2 className={` text-base flex items-center ${
+                isSidebarOpen 
+                  ? 'justify-start gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 mb-3 p-2' 
+                  : 'justify-center p-1'
+              } transition duration-200`}>    
+                <div className={`${
+                  !isSidebarOpen ? 'p-2.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700' : ''
+                }`}>
+                  <BookOpen className="h-5 w-5 text-blue-500 dark:text-black" />
+                </div>
+                <span className={`${isSidebarOpen ? 'block' : 'hidden'}`}>Library</span>
               </h2>
             </Link>
 
-            <div className="flex flex-col gap-1 ml-3 pl-2 border-l-2 border-gray-300 dark:border-gray-600 ">
+            <div className={`flex flex-col gap-1 ml-3 pl-2 border-l-2 border-gray-300 dark:border-gray-600 ${
+                isSidebarOpen ? 'block' : 'hidden'
+              }`}>
               {chats.length > 0 ? (
-                chats.map((chat) => (
+                chats.slice(0, 5).map((chat) => (
                   <div
                     key={chat.id}
                     className="flex items-center justify-between relative group rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200"
@@ -232,36 +276,54 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
                 ))
               ) : (
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Loading...
                 </p>
               )}
             </div>
           </div>
 
           {/* 사용자 설정 버튼 */}
-          <div className="border-t border-gray-300 dark:border-gray-600 py-1 px-1 flex">
-            <div className="flex w-full items-center p-3 gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200 cursor-pointer">
-              <Settings className="h-5 w-5" />
-              <span>사용자 설정</span>
+          <div className="border-t border-gray-300 dark:border-gray-600 py-1 px-1 flex w-full justify-center lg:justify-start">
+            <div className={`flex w-full items-center gap-2 ${
+              isSidebarOpen 
+                ? 'rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 p-3' 
+                : 'pl-2'
+            } transition duration-200 cursor-pointer justify-center lg:justify-start`}>
+              <div className={`${
+                !isSidebarOpen ? 'p-2.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700' : ''
+              }`}>
+                <CircleUserRound  className="h-5 w-5" />
+              </div>
+              <span className={`${isSidebarOpen ? 'block' : 'hidden'}`}>사용자 설정</span>
             </div>
           </div>
+
           {/* 관리자 설정 버튼 */}
           <div onClick={()=>setIsSettingsOpen(!isSettingsOpen)}
-          className="border-t border-gray-300 dark:border-gray-600 py-1 px-1 flex">
-            <div className="flex w-full items-center p-3 gap-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200 cursor-pointer">
-              <Settings className="h-5 w-5" />
+            className="border-t border-gray-300 dark:border-gray-600 py-1 px-1 flex w-full justify-center lg:justify-start">
+            <div className={`flex w-full items-center gap-2 ${
+              isSidebarOpen 
+                ? 'rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 p-3' 
+                : 'pl-2'
+            } transition duration-200 cursor-pointer justify-center lg:justify-start`}>
+              <div className={`${
+                !isSidebarOpen ? 'p-2.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700' : ''
+              }`}>
+                <Settings className="h-5 w-5" />
+              </div>
               <SettingsDialog
-              isOpen={isSettingsOpen}
-              setIsOpen={setIsSettingsOpen}
+                isOpen={isSettingsOpen}
+                setIsOpen={setIsSettingsOpen}
               />
-              <span>관리자 설정</span>
+              <span className={`${isSidebarOpen ? 'block' : 'hidden'}`}>관리자 설정</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* ------------ 메인 컨텐츠 ------------ */}
-      <div className="lg:pl-56 w-full">
+      <div className={`transition-all duration-300 ${
+        isSidebarOpen ? 'lg:pl-64' : 'lg:pl-16'
+      } w-full`}>
         <Layout>{children}</Layout>
       </div>
 
@@ -374,7 +436,7 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
           {/* 검색 결과 리스트 */}
           <div className="max-h-72 overflow-y-auto mt-3">
             {filteredChats.length > 0 ? (
-              filteredChats.map((chat) => (
+              filteredChats.slice(0,10).map((chat) => (
                 <div
                   key={chat.id}
                   onClick={() => handleSelectChat(chat.id)}
