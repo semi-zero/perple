@@ -3,9 +3,19 @@ import { ArrowUp } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import Attach from './MessageInputActions/Attach';
-import CopilotToggle from './MessageInputActions/Copilot';
+
 import { File } from './ChatWindow';
-import AttachSmall from './MessageInputActions/AttachSmall';
+
+import Focus from './MessageInputActions/Focus';
+import Optimization from './MessageInputActions/Optimization';
+import AcademicSearchFields from './MessageInputActions/AcademicSearchFields'; // <-- 분리된 컴포넌트를 가져옵니다.
+
+
+interface ExtraMessage {
+  field1: string;
+  field2: string;
+  field3: string;
+}
 
 const MessageInput = ({
   sendMessage,
@@ -15,6 +25,11 @@ const MessageInput = ({
   files,
   setFiles,
   focusMode,
+  setFocusMode,
+  optimizationMode,
+  setOptimizationMode,
+  extraMessage,
+  setExtraMessage
 }: {
   sendMessage: (message: string) => void;
   loading: boolean;
@@ -23,6 +38,11 @@ const MessageInput = ({
   files: File[];
   setFiles: (files: File[]) => void;
   focusMode: string;
+  setFocusMode: (mode: string) => void;
+  optimizationMode: string;
+  setOptimizationMode: (mode: string) => void;
+  extraMessage: ExtraMessage;
+  setExtraMessage: React.Dispatch<React.SetStateAction<ExtraMessage>>; 
 }) => {
   const [copilotEnabled, setCopilotEnabled] = useState(false);
   const [message, setMessage] = useState('');
@@ -60,83 +80,78 @@ const MessageInput = ({
     };
   }, []);
 
+
+  ////////////////////화살표 방향 기능////////////////////
+  const [isEmptyChat, setIsEmptyChat] = useState(false);
+
   return (
     <form
       onSubmit={(e) => {
-        if (loading) return;
         e.preventDefault();
         sendMessage(message);
         setMessage('');
       }}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && !e.shiftKey && !loading) {
+        if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
           sendMessage(message);
           setMessage('');
         }
       }}
-      className={cn(
-        'flex flex-col bg-white dark:bg-dark-800 shadow-lg rounded-2xl p-4 border border-light-200 dark:border-dark-200',
-        mode === 'multi' ? 'flex-col rounded-lg' : 'flex-row rounded-full',
-      )}
+      className="w-full"
     >
-      {mode === 'single' && focusMode === 'academicSearch' && (
-        <AttachSmall
-          fileIds={fileIds}
-          setFileIds={setFileIds}
-          files={files}
-          setFiles={setFiles}
+      <div className="flex flex-col bg-white dark:bg-dark-800 shadow-lg rounded-3xl p-4 border border-light-200 dark:border-dark-200">
+
+        <TextareaAutosize
+          ref={inputRef}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          minRows={2}
+          className="bg-transparent placeholder-gray-500 dark:placeholder-gray-400 text-lg text-gray-900 dark:text-white resize-none focus:outline-none w-full"
+          placeholder="무엇을 도와드릴까요?"
         />
-      )}
-      <TextareaAutosize
-        ref={inputRef}
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        onHeightChange={(height, props) => {
-          setTextareaRows(Math.ceil(height / props.rowHeight));
-        }}
-        className="transition bg-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:text-sm text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none w-full px-2 max-h-24 lg:max-h-36 xl:max-h-48 flex-grow flex-shrink"
-        placeholder="후속 질문하기"
-      />
-      {mode === 'single' && (
-        <div className="flex flex-row items-center space-x-4">
-          {/* check */}
-          {/* <CopilotToggle
-            copilotEnabled={copilotEnabled}
-            setCopilotEnabled={setCopilotEnabled}
-          /> */}
+
+        {/* agentSimulator 모드일 때만 학술 검색 정보 섹션 렌더링 */}
+        {focusMode === 'agentSimulator' && (
+          <AcademicSearchFields
+            extraMessage={extraMessage}
+            setExtraMessage={setExtraMessage}
+          />
+        )}
+
+        <div className="flex flex-row items-center space-x-2 mt-4 lg:space-x-4">
+          <Focus 
+          focusMode={focusMode} 
+          setFocusMode={setFocusMode} 
+          isEmptyChat={isEmptyChat}/>
+
+          <div className="flex flex-row items-center space-x-1 sm:space-x-4">
+            {(!focusMode || focusMode === 'academicSearch') && (
+              <Attach
+                fileIds={fileIds}
+                setFileIds={setFileIds}
+                files={files}
+                setFiles={setFiles}
+                showText
+              />
+            )}
+            {focusMode === 'pipelineSearch' && (
+              <Optimization
+                optimizationMode={optimizationMode}
+                setOptimizationMode={setOptimizationMode}
+                focusMode={focusMode}
+                isEmptyChat={isEmptyChat}/>
+            )}
+          </div>
+
           <button
-            disabled={message.trim().length === 0 || loading}
-            className="bg-blue-500 text-white disabled:text-gray-300 dark:disabled:text-gray-500 hover:bg-blue-600 transition duration-100 disabled:bg-gray-200 dark:disabled:bg-gray-700 rounded-full p-2"
+            disabled={!message.trim()}
+            className="bg-blue-500 text-white disabled:bg-gray-300 rounded-full p-2 hover:bg-blue-600 transition"
           >
-            <ArrowUp className="bg-background" size={17} />
+            <ArrowUp size={20} />
           </button>
         </div>
-      )}
-      {mode === 'multi' && (
-        <div className="flex flex-row items-center justify-end w-full pt-2 space-x-4">
-          {focusMode === 'academicSearch' && (
-            <AttachSmall
-              fileIds={fileIds}
-              setFileIds={setFileIds}
-              files={files}
-              setFiles={setFiles}
-            />
-          )}
-          <div className="flex flex-row items-center space-x-4">
-            {/* <CopilotToggle
-              copilotEnabled={copilotEnabled}
-              setCopilotEnabled={setCopilotEnabled}
-            /> */}
-            <button
-              disabled={message.trim().length === 0 || loading}
-              className="bg-blue-500 text-white disabled:text-gray-300 dark:disabled:text-gray-500 hover:bg-blue-600 transition duration-100 disabled:bg-gray-200 dark:disabled:bg-gray-700 rounded-full p-2"
-            >
-              <ArrowUp size={17} />
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
     </form>
   );
 };

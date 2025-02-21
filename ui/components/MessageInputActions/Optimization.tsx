@@ -1,4 +1,4 @@
-import { ChevronDown, Sliders, Star, Zap } from 'lucide-react';
+import { ChevronDown, Sliders, Star, Zap, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Popover,
@@ -82,10 +82,12 @@ const Optimization = ({
   optimizationMode,
   setOptimizationMode,
   focusMode,
+  isEmptyChat
 }: {
   optimizationMode: string;
   setOptimizationMode: (mode: string) => void;
   focusMode: string;
+  isEmptyChat: boolean;
 }) => {
   const filteredModes = getOptimizationModesByFocusMode(focusMode);
   return (
@@ -105,7 +107,7 @@ const Optimization = ({
                 ?.title
             }
           </p>
-          <ChevronDown size={20} />
+          {isEmptyChat ? <ChevronDown size={20} className="-translate-x-1" /> : <ChevronUp size={20} className="-translate-x-1" />}
         </div>
       </PopoverButton>
       <Transition
@@ -117,7 +119,10 @@ const Optimization = ({
         leaveFrom="opacity-100 translate-y-0"
         leaveTo="opacity-0 translate-y-1"
       >
-        <PopoverPanel className="absolute z-10 w-64 md:w-[200px] left-0">
+        <PopoverPanel className={`absolute z-10 w-64 md:w-[200px] left-0
+            ${isEmptyChat ? ""
+            :'bottom-full'}
+            `}>
           <div className="flex flex-col gap-2 bg-white dark:bg-dark-800 border rounded-2xl border-light-200 dark:border-dark-200 w-full p-4 max-h-[200px] md:max-h-none overflow-y-auto">
             {filteredModes.map((mode, i) => (
               <PopoverButton

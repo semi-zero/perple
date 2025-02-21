@@ -5,7 +5,8 @@ import {
   Pencil,
   ScanEye,
   SwatchBook,
-  Atom 
+  Atom,
+  ChevronUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -71,9 +72,11 @@ export const focusModes = [
 const Focus = ({
   focusMode,
   setFocusMode,
+  isEmptyChat
 }: {
   focusMode: string;
   setFocusMode: (mode: string) => void;
+  isEmptyChat: boolean;
 }) => {
   return (
     <Popover className="relative w-full">
@@ -87,7 +90,7 @@ const Focus = ({
             <p className="text-xs font-medium hidden lg:block">
               {focusModes.find((mode) => mode.key === focusMode)?.title}
             </p>
-            <ChevronDown size={20} className="-translate-x-1" />
+            {isEmptyChat ? <ChevronDown size={20} className="-translate-x-1" /> : <ChevronUp size={20} className="-translate-x-1" />}
           </div>
         ) : (
           <div className="flex flex-row items-center space-x-1">
@@ -105,7 +108,10 @@ const Focus = ({
         leaveFrom="opacity-100 translate-y-0"
         leaveTo="opacity-0 translate-y-1"
       >
-        <PopoverPanel className="absolute z-10 w-64 md:w-[500px] left-0">
+        <PopoverPanel className={`absolute z-10 w-64 md:w-[500px] left-0
+            ${isEmptyChat ? ""
+            :'bottom-full'}
+            `}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 bg-white dark:bg-dark-800 border rounded-2xl border-light-200 dark:border-dark-200 w-full p-4 max-h-[200px] md:max-h-none overflow-y-auto">
             {focusModes.map((mode, i) => (
               <PopoverButton

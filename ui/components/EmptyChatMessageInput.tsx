@@ -65,7 +65,8 @@ export default function EmptyChatMessageInput({
   //   sendMessage(message);
   //   setMessage('');
   // };
-
+  ////////////////////화살표 방향 기능////////////////////
+  const [isEmptyChat, setIsEmptyChat] = useState(false);
   return (
     <form
       onSubmit={(e) => {
@@ -102,7 +103,10 @@ export default function EmptyChatMessageInput({
         )}
 
         <div className="flex flex-row items-center space-x-2 mt-4 lg:space-x-4">
-          <Focus focusMode={focusMode} setFocusMode={setFocusMode} />
+        <Focus 
+          focusMode={focusMode} 
+          setFocusMode={setFocusMode} 
+          isEmptyChat={isEmptyChat}/>
 
           <div className="flex flex-row items-center space-x-1 sm:space-x-4">
             {(!focusMode || focusMode === 'academicSearch') && (
@@ -119,7 +123,7 @@ export default function EmptyChatMessageInput({
                 optimizationMode={optimizationMode}
                 setOptimizationMode={setOptimizationMode}
                 focusMode={focusMode}
-              />
+                isEmptyChat={isEmptyChat}/>
             )}
           </div>
 

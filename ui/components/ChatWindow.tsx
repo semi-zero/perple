@@ -664,6 +664,11 @@ const ChatWindow = ({ id }: { id?: string }) => {
               setFiles={setFiles}
               searchSteps={searchSteps} /* searchSteps prop 추가 */
               focusMode={focusMode}
+              setFocusMode={setFocusMode}
+              optimizationMode={optimizationMode}
+              setOptimizationMode={setOptimizationMode}
+              extraMessage={extraMessage}
+              setExtraMessage={setExtraMessage}
             />
           </>
         ) : (

@@ -20,6 +20,8 @@ import { useSpeech } from 'react-text-to-speech';
 import SearchImages from './SearchImages';
 import SearchVideos from './SearchVideos';
 
+import { focusModes } from '@/components/MessageInputActions/Focus';
+
 const MessageBox = ({
   message,
   messageIndex,
@@ -29,6 +31,7 @@ const MessageBox = ({
   isLast,
   rewrite,
   sendMessage,
+  focusMode
 }: {
   message: Message;
   messageIndex: number;
@@ -38,6 +41,7 @@ const MessageBox = ({
   isLast: boolean;
   rewrite: (messageId: string) => void;
   sendMessage: (message: string) => void;
+  focusMode: string
 }) => {
   const [parsedMessage, setParsedMessage] = useState(message.content);
   const [speechMessage, setSpeechMessage] = useState(message.content);
@@ -64,6 +68,18 @@ const MessageBox = ({
   }, [message.content, message.sources, message.role]);
 
   const { speechStatus, start, stop } = useSpeech({ text: speechMessage });
+
+  /////////////////////focusMode 추가 /////////////////////
+  const [answerFocusMode] = useState(focusMode)
+  const getFocusModeIcon = (modeKey:string) => {
+    const selectedMode = focusModes.find((m)=> m.key === modeKey);
+    return selectedMode?.icon;
+  }
+
+  const getFocusModeTitle = (modeKey:string) => {
+    const selectedMode = focusModes.find((m)=> m.key === modeKey);
+    return selectedMode?.title;
+  }
 
   return (
     <div className="w-full">
@@ -93,15 +109,26 @@ const MessageBox = ({
               </div>
             )}
             <div className="flex flex-col space-y-6">
+
               <div className="flex flex-row items-center space-x-2">
               {loading && isLast ? (
                   <Loader2 className="animate-spin text-gray-500 dark:text-gray-400" size={20} />
                 ) : (
                   <Layers className="text-gray-700 dark:text-gray-300" size={20} />
                 )}
-                <h3 className="text-gray-900 dark:text-gray-100 font-semibold text-lg">
-                  답변
-                </h3>
+                <div className="flex flex-row justify-between items-center w-full">
+                  <div className="text-gray-900 dark:text-gray-100 font-semibold text-lg">
+                    답변
+                  </div>
+                  <div className="flex flex-row items-center space-x-1">
+                    <div className="text-blue-500 dark:text-gray-100 text-xs">
+                      {getFocusModeIcon(answerFocusMode)}
+                    </div>
+                    <div className="text-blue-500 dark:text-gray-100 text-xs">
+                      {getFocusModeTitle(answerFocusMode)}
+                    </div>
+                  </div>
+                </div>
               </div>
               <Markdown
                 className={cn(
