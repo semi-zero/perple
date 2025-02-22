@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Layout from './Layout';
 import SettingsDialog from './SettingsDialog';
+import { useUI } from '@/contexts/UIContext';
 
 export interface Chat {
   id: string;
@@ -29,30 +30,9 @@ export interface Chat {
 const Sidebar = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
 
-  //설정 모달
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  // 검색 모달
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
+  ////////////////////채팅 목록 관련 기능////////////////////
   // 채팅 목록
   const [chats, setChats] = useState<Chat[]>([]);
-
-  // Action menu
-  const [actionModal, setActionModal] = useState<{
-    open: boolean;
-    chatId: string | null;
-    x: number;
-    y: number;
-  }>({ open: false, chatId: null, x: 0, y: 0 });
-
-  // 삭제 확인 모달
-  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
-    open: boolean;
-    chatId: string | null;
-  }>({ open: false, chatId: null });
-
   // 채팅 목록 가져오기
   useEffect(() => {
     const fetchChats = async () => {
@@ -73,8 +53,19 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
     fetchChats();
   }, [chats]);
 
-  // 액션 메뉴 (점 세 개) 제어
-  const handleActionClick = (e: React.MouseEvent, chatId: string) => {
+
+
+  ////////////////////채팅 액션 메뉴 관련 기능////////////////////
+  // Action menu
+  const [actionModal, setActionModal] = useState<{
+    open: boolean;
+    chatId: string | null;
+    x: number;
+    y: number;
+  }>({ open: false, chatId: null, x: 0, y: 0 });
+
+   // 액션 메뉴 (점 세 개) 제어
+   const handleActionClick = (e: React.MouseEvent, chatId: string) => {
     const button = e.currentTarget;
     const rect = button.getBoundingClientRect();
     setActionModal({ open: true, chatId, x: rect.right, y: rect.bottom });
@@ -83,6 +74,59 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
   const closeActionModal = () => {
     setActionModal({ open: false, chatId: null, x: 0, y: 0 });
   };
+
+  // 바깥 클릭 시 액션 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (actionModal.open) closeActionModal();
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [actionModal.open]);
+
+
+
+  ////////////////////채팅 검색 관련 기능////////////////////
+  // 검색 모달
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // 검색 모달 열고 닫기
+  const openSearchModal = () => {
+    setIsSearchOpen(true);
+    setSearchQuery('');
+  };
+  const closeSearchModal = () => {
+    setIsSearchOpen(false);
+    setSearchQuery('');
+  };
+
+  // 검색어 입력 시 필터
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // 필터링된 채팅 목록
+  const filteredChats = chats.filter((chat) =>
+    chat.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // 검색된 채팅 클릭하면 이동
+  const handleSelectChat = (chatId: string) => {
+    router.push(`/c/${chatId}`);
+    closeSearchModal();
+  };
+
+
+
+  ////////////////////채팅 삭제 관련 기능////////////////////
+  // 삭제 확인 모달
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    open: boolean;
+    chatId: string | null;
+  }>({ open: false, chatId: null });
 
   const openDeleteConfirmModal = (chatId: string) => {
     setDeleteConfirmModal({ open: true, chatId });
@@ -113,17 +157,11 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // 바깥 클릭 시 액션 메뉴 닫기
-  useEffect(() => {
-    const handleClickOutside = () => {
-      if (actionModal.open) closeActionModal();
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [actionModal.open]);
 
+
+  //////////////////// 메뉴 관련 기능////////////////////
+  //설정 모달
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // 바깥 클릭 시 설정 메뉴 닫기
   useEffect(() => {
     const handleClickSettingDialogOutside = () => {
@@ -135,32 +173,10 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
     };
   }, [isSettingsOpen]);
 
-  // 검색 모달 열고 닫기
-  const openSearchModal = () => {
-    setIsSearchOpen(true);
-    setSearchQuery('');
-  };
-  const closeSearchModal = () => {
-    setIsSearchOpen(false);
-    setSearchQuery('');
-  };
+  
 
-  // 검색어 입력 시 필터
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
 
-  // 필터링된 채팅 목록
-  const filteredChats = chats.filter((chat) =>
-    chat.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // 검색된 채팅 클릭하면 이동
-  const handleSelectChat = (chatId: string) => {
-    router.push(`/c/${chatId}`);
-    closeSearchModal();
-  };
-
+  ////////////////////기타 기능////////////////////
   // 날짜/시간 포매팅 함수(예시)
   const formatDateTime = (datetime: string) => {
     // 예: YYYY-MM-DD HH:mm 으로 간단 변환
@@ -173,7 +189,12 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
     return `${year}-${month}-${day} ${hour}:${min}`;
   };
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // 사이드바 상태 추가
+
+
+  ////////////////////사이드바 오픈 관리 기능////////////////////
+  const { isSidebarOpen, toggleSidebar } = useUI();
+
+
 
   return (
     <div className="lg:flex">
@@ -186,7 +207,7 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
           {/* 상단 버튼들 */}
           <div className={`flex ${isSidebarOpen ? 'justify-between' : 'flex-col gap-2'} items-center w-full`}>
             <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              onClick={toggleSidebar}
               className="p-2.5 cursor-pointer rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200"
             >
               <PanelsLeftBottom className="h-5 w-5" />

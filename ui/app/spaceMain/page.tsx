@@ -28,50 +28,11 @@ interface SpaceItem {
 
 const Page = () => {
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [spaces, setSpaces] = useState<SpaceItem[]>([]);
-  // 검색용 상태
-  const [spaceSearchQuery, setSpaceSearchQuery] = useState('');
-  // 새 스페이스 생성용
-  const [newSpaceName, setNewSpaceName] = useState('');
   // 에러 메시지 등을 담을 수 있는 상태
   const [error, setError] = useState('');
 
-  // Action menu
-  const [spaceActionModal, setSpaceActionModal] = useState<{
-    open: boolean;
-    spaceId: string | null;
-    x: number;
-    y: number;
-  }>({ open: false, spaceId: null, x: 0, y: 0 });
-
-  // 새 공간 생성 모달
-  const [createSpaceModal, setCreateSpaceModal] = useState<{
-    open: boolean;
-  }>({ open: false });
-
-  // 삭제 확인 모달
-  const [deleteSpaceConfirmModal, setDeleteSpaceConfirmModal] = useState<{
-    open: boolean;
-    spaceId: string | null;
-  }>({ open: false, spaceId: null });
-
-
-
-  // 날짜/시간 포매팅 함수(예시)
-  const formatDateTime = (datetime: string) => {
-    // 예: YYYY-MM-DD HH:mm 으로 간단 변환
-    const d = new Date(datetime);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hour = String(d.getHours()).padStart(2, '0');
-    const min = String(d.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day} ${hour}:${min}`;
-  };
-
-
-
+  ////////////////////공간 목록 관련 기능////////////////////
+  const [spaces, setSpaces] = useState<SpaceItem[]>([]);
   useEffect(() => {
     const fetchSpaces = async () => {
       setLoading(true);
@@ -86,6 +47,70 @@ const Page = () => {
     fetchSpaces();
   }, []);
 
+
+
+  ////////////////////공간 검색 관련 기능////////////////////
+  // 검색용 상태
+  const [spaceSearchQuery, setSpaceSearchQuery] = useState('');
+
+  // 검색된 결과 필터링
+  const filteredSpaces = spaces.filter((space) =>
+    space.spaceName.toLowerCase().includes(spaceSearchQuery.toLowerCase())
+  );
+
+
+
+  ////////////////////공간 액션 메뉴 관련 기능////////////////////
+  // Action menu
+  const [spaceActionModal, setSpaceActionModal] = useState<{
+    open: boolean;
+    spaceId: string | null;
+    x: number;
+    y: number;
+  }>({ open: false, spaceId: null, x: 0, y: 0 });
+
+  // 액션 메뉴 (점 세 개) 제어
+  const handleSpaceActionClick = (e: React.MouseEvent, spaceId: string) => {
+    const button = e.currentTarget;
+    const rect = button.getBoundingClientRect();
+    setSpaceActionModal({ open: true, spaceId, x: rect.right, y: rect.bottom });
+  };
+
+  //공간 액션 모달 닫기
+  const closeSpaceActionModal = () => {
+    setSpaceActionModal({ open: false, spaceId: null, x: 0, y: 0 });
+  };
+
+  // 바깥 클릭 시 액션 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (spaceActionModal.open) closeSpaceActionModal();
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [spaceActionModal.open]);
+
+
+
+  ////////////////////공간 생성 관련 기능////////////////////
+  // 새 스페이스 생성용
+  const [newSpaceName, setNewSpaceName] = useState('');
+  // 새 공간 생성 모달
+  const [createSpaceModal, setCreateSpaceModal] = useState<{
+    open: boolean;
+  }>({ open: false });
+
+  //공간 생성 모달 열기
+  const openCreateSpaceModal = () => {
+    setCreateSpaceModal({ open: true });
+    closeSpaceActionModal();
+  };
+  // 공간 생성 모달 닫기  
+  const closeCreateSpaceModal = () => {
+    setCreateSpaceModal({ open: false });
+  };
 
   // 스페이스 생성
   const handleCreateSpace = async () => {
@@ -116,43 +141,14 @@ const Page = () => {
     }
   };
 
-  // 검색된 결과 필터링
-  const filteredSpaces = spaces.filter((space) =>
-    space.spaceName.toLowerCase().includes(spaceSearchQuery.toLowerCase())
-  );
 
-  // 액션 메뉴 (점 세 개) 제어
-  const handleSpaceActionClick = (e: React.MouseEvent, spaceId: string) => {
-    const button = e.currentTarget;
-    const rect = button.getBoundingClientRect();
-    setSpaceActionModal({ open: true, spaceId, x: rect.right, y: rect.bottom });
-  };
 
-  //공간 액션 모달 닫기
-  const closeSpaceActionModal = () => {
-    setSpaceActionModal({ open: false, spaceId: null, x: 0, y: 0 });
-  };
-
-  // 바깥 클릭 시 액션 메뉴 닫기
-  useEffect(() => {
-    const handleClickOutside = () => {
-      if (spaceActionModal.open) closeSpaceActionModal();
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [spaceActionModal.open]);
-
-  //공간 생성 모달 열기
-  const openCreateSpaceModal = () => {
-    setCreateSpaceModal({ open: true });
-    closeSpaceActionModal();
-  };
-  // 공간 생성 모달 닫기  
-  const closeCreateSpaceModal = () => {
-    setCreateSpaceModal({ open: false });
-  };
+  ////////////////////공간 삭제 관련 기능////////////////////
+  // 삭제 확인 모달
+  const [deleteSpaceConfirmModal, setDeleteSpaceConfirmModal] = useState<{
+    open: boolean;
+    spaceId: string | null;
+  }>({ open: false, spaceId: null });
 
   //삭제 확인 모달 열기
   const openDeleteSpaceConfirmModal = (spaceId: string) => {
@@ -185,6 +181,23 @@ const Page = () => {
     }
   };
 
+
+
+  ////////////////////기타 함수 관련 기능////////////////////
+  // 날짜/시간 포매팅 함수(예시)
+  const formatDateTime = (datetime: string) => {
+    // 예: YYYY-MM-DD HH:mm 으로 간단 변환
+    const d = new Date(datetime);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hour = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hour}:${min}`;
+  };
+
+
+  
   return (
     <div className="max-w-6xl mx-auto min-h-screen flex flex-col">
       {/* 고정된 상단 바 */}

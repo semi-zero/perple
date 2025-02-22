@@ -23,93 +23,14 @@ interface SpaceItem {
 }
 
 const Page = () => {
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const { spaceId } = useParams(); // Next.js 13+ App Router 환경에서 사용
-  //const { spaceId } = router.query; // URL 경로에서 spaceId 가져오기
-
-  const [spaces, setSpaces] = useState<SpaceItem[]>([]);
-
-  // Action menu
-  const [actionModal, setActionModal] = useState<{
-    open: boolean;
-    chatId: string | null;
-    x: number;
-    y: number;
-  }>({ open: false, chatId: null, x: 0, y: 0 });
-
-  // 삭제 확인 모달
-  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
-    open: boolean;
-    chatId: string | null;
-  }>({ open: false, chatId: null });
-
-  // 액션 메뉴 (점 세 개) 제어
-  const handleActionClick = (e: React.MouseEvent, chatId: string) => {
-    const button = e.currentTarget;
-    const rect = button.getBoundingClientRect();
-    setActionModal({ open: true, chatId, x: rect.right, y: rect.bottom });
-  };
-
-  const closeActionModal = () => {
-    setActionModal({ open: false, chatId: null, x: 0, y: 0 });
-  };
-
-  const openDeleteConfirmModal = (chatId: string) => {
-    setDeleteConfirmModal({ open: true, chatId });
-    closeActionModal();
-  };
-
-  const closeDeleteConfirmModal = () => {
-    setDeleteConfirmModal({ open: false, chatId: null });
-  };
-
-  const deleteChat = async () => {
-    if (!deleteConfirmModal.chatId) return;
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/chats/${deleteConfirmModal.chatId}`,
-        {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-      if (!res.ok) throw new Error('Failed to delete chat');
-
-      // 성공 후 state에서 해당 항목 제거
-      setChats((prev) => prev.filter((chat) => chat.id !== deleteConfirmModal.chatId));
-      closeDeleteConfirmModal();
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // 바깥 클릭 시 액션 메뉴 닫기
-  useEffect(() => {
-    const handleClickOutside = () => {
-      if (actionModal.open) closeActionModal();
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [actionModal.open]);
-
   
-
-  // 날짜/시간 포매팅 함수(예시)
-  const formatDateTime = (datetime: string) => {
-    // 예: YYYY-MM-DD HH:mm 으로 간단 변환
-    const d = new Date(datetime);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hour = String(d.getHours()).padStart(2, '0');
-    const min = String(d.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day} ${hour}:${min}`;
-  };
+  const [loading, setLoading] = useState(true);
+  
+  ////////////////////공간, 채팅 목록 관련 기능////////////////////
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [spaces, setSpaces] = useState<SpaceItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { spaceId } = useParams(); // Next.js 13+ App Router 환경에서 사용
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -145,6 +66,92 @@ const Page = () => {
   const filteredChats = chats.filter(chat => 
     chat.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  ////////////////////채팅 액션 메뉴 관련 기능////////////////////
+  // Action menu
+  const [actionModal, setActionModal] = useState<{
+    open: boolean;
+    chatId: string | null;
+    x: number;
+    y: number;
+  }>({ open: false, chatId: null, x: 0, y: 0 });
+
+  // 액션 메뉴 (점 세 개) 제어
+  const handleActionClick = (e: React.MouseEvent, chatId: string) => {
+    const button = e.currentTarget;
+    const rect = button.getBoundingClientRect();
+    setActionModal({ open: true, chatId, x: rect.right, y: rect.bottom });
+  };
+
+  const closeActionModal = () => {
+    setActionModal({ open: false, chatId: null, x: 0, y: 0 });
+  };
+
+  // 바깥 클릭 시 액션 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (actionModal.open) closeActionModal();
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [actionModal.open]);
+
+
+  ////////////////////채팅 삭제 관련 기능////////////////////
+  // 삭제 확인 모달
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    open: boolean;
+    chatId: string | null;
+  }>({ open: false, chatId: null });
+  
+  const openDeleteConfirmModal = (chatId: string) => {
+    setDeleteConfirmModal({ open: true, chatId });
+    closeActionModal();
+  };
+
+  const closeDeleteConfirmModal = () => {
+    setDeleteConfirmModal({ open: false, chatId: null });
+  };
+
+  const deleteChat = async () => {
+    if (!deleteConfirmModal.chatId) return;
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/chats/${deleteConfirmModal.chatId}`,
+        {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+      if (!res.ok) throw new Error('Failed to delete chat');
+
+      // 성공 후 state에서 해당 항목 제거
+      setChats((prev) => prev.filter((chat) => chat.id !== deleteConfirmModal.chatId));
+      closeDeleteConfirmModal();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+
+  
+  ////////////////////기타 기능////////////////////
+  // 날짜/시간 포매팅 함수(예시)
+  const formatDateTime = (datetime: string) => {
+    // 예: YYYY-MM-DD HH:mm 으로 간단 변환
+    const d = new Date(datetime);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hour = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hour}:${min}`;
+  };
+
+
+ 
 
   return (
     <div className="max-w-6xl mx-auto min-h-screen flex flex-col">

@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import Sidebar from '@/components/Sidebar';
 import { Toaster } from 'sonner';
 import ThemeProvider from '@/components/theme/Provider';
+import { UIProvider } from '@/contexts/UIContext';  // 추가
 
 // const montserrat = Montserrat({
 //   weight: ['300', '400', '500', '700'],
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html className="h-full" lang="en" suppressHydrationWarning>
       <body className={cn('h-full bg-white text-black dark:bg-dark-primary dark:text-white')}>
+      <UIProvider>  {/* 추가 */}
         <ThemeProvider>
           <Sidebar>{children}</Sidebar>
           <Toaster
@@ -39,6 +41,7 @@ export default function RootLayout({
             }}
           />
         </ThemeProvider>
+        </UIProvider>  {/* 추가 */}
       </body>
     </html>
   );

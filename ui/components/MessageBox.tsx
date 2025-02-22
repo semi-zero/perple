@@ -130,14 +130,17 @@ const MessageBox = ({
                   </div>
                 </div>
               </div>
-              <Markdown
-                className={cn(
-                  'prose dark:prose-invert max-w-none text-gray-800 dark:text-gray-200',
-                  'leading-relaxed tracking-wide'
-                )}
-              >
-                {parsedMessage}
-              </Markdown>
+              {/* Markdown을 감싸는 div에 overflow-x-auto 적용 */}
+              <div className="overflow-x-auto">
+                <Markdown
+                  className={cn(
+                    'prose dark:prose-invert max-w-none text-gray-800 dark:text-gray-200',
+                    'leading-relaxed tracking-wide'
+                  )}
+                >
+                  {parsedMessage}
+                </Markdown>
+              </div>
               {loading && isLast ? null : (
                 <div className="flex flex-row items-center justify-between w-full text-gray-800 dark:text-gray-200 py-4 -mx-2">
                   <div className="flex flex-row items-center space-x-1">

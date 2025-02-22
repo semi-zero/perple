@@ -17,16 +17,34 @@ export interface Chat {
 }
 
 const Page = () => {
-  const [chats, setChats] = useState<Chat[]>([]);
+  
   const [loading, setLoading] = useState(true);
+
+  ////////////////////채팅 목록 관련 기능////////////////////
+  const [chats, setChats] = useState<Chat[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 상태 추가
-  const [showSpaceModal, setShowSpaceModal] = useState<{
-    open: boolean;
-    chatId: string | null;
-  }>({ open: false, chatId: null });
+  useEffect(() => {
+    const fetchChats = async () => {
+      setLoading(true);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chats`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      setChats(data.chats);
+      setLoading(false);
+    };
+    fetchChats();
+  }, []);
 
+  const filteredChats = chats.filter(chat => 
+    chat.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+
+
+  ////////////////////채팅 액션 메뉴 관련 기능////////////////////
   // Action menu
   const [actionModal, setActionModal] = useState<{
     open: boolean;
@@ -34,12 +52,6 @@ const Page = () => {
     x: number;
     y: number;
   }>({ open: false, chatId: null, x: 0, y: 0 });
-
-  // 삭제 확인 모달
-  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
-    open: boolean;
-    chatId: string | null;
-  }>({ open: false, chatId: null });
 
   // 액션 메뉴 (점 세 개) 제어
   const handleActionClick = (e: React.MouseEvent, chatId: string) => {
@@ -51,6 +63,26 @@ const Page = () => {
   const closeActionModal = () => {
     setActionModal({ open: false, chatId: null, x: 0, y: 0 });
   };
+
+  // 바깥 클릭 시 액션 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (actionModal.open) closeActionModal();
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [actionModal.open]);
+  
+
+
+  ////////////////////채팅 삭제 관련 기능////////////////////
+  // 삭제 확인 모달
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    open: boolean;
+    chatId: string | null;
+  }>({ open: false, chatId: null });
 
   const openDeleteConfirmModal = (chatId: string) => {
     setDeleteConfirmModal({ open: true, chatId });
@@ -81,49 +113,15 @@ const Page = () => {
     }
   };
 
-  // 바깥 클릭 시 액션 메뉴 닫기
-  useEffect(() => {
-    const handleClickOutside = () => {
-      if (actionModal.open) closeActionModal();
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [actionModal.open]);
 
-  
 
-  // 날짜/시간 포매팅 함수(예시)
-  const formatDateTime = (datetime: string) => {
-    // 예: YYYY-MM-DD HH:mm 으로 간단 변환
-    const d = new Date(datetime);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hour = String(d.getHours()).padStart(2, '0');
-    const min = String(d.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day} ${hour}:${min}`;
-  };
+  ////////////////////공간 액션 메뉴 관련 기능////////////////////
+  // 상태 추가
+  const [showSpaceModal, setShowSpaceModal] = useState<{
+    open: boolean;
+    chatId: string | null;
+  }>({ open: false, chatId: null });
 
-  useEffect(() => {
-    const fetchChats = async () => {
-      setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chats`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const data = await res.json();
-      setChats(data.chats);
-      setLoading(false);
-    };
-    fetchChats();
-  }, []);
-
-  const filteredChats = chats.filter(chat => 
-    chat.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
   const openSpaceSelectionModal = (chatId: string) => {
     setShowSpaceModal({ open: true, chatId });
     closeActionModal();
@@ -159,6 +157,23 @@ const Page = () => {
     }
   };
 
+
+
+  ////////////////////기타 기능////////////////////
+  // 날짜/시간 포매팅 함수(예시)
+  const formatDateTime = (datetime: string) => {
+    // 예: YYYY-MM-DD HH:mm 으로 간단 변환
+    const d = new Date(datetime);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hour = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hour}:${min}`;
+  };
+
+
+  
   return (
     <div className="max-w-6xl mx-auto min-h-screen flex flex-col">
       {/* 고정된 상단 바 */}
