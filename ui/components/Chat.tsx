@@ -117,15 +117,16 @@ const Chat = ({
               rewrite={rewrite}
               sendMessage={sendMessage}
               focusMode={focusMode}
+              searchSteps={searchSteps}
             />
             {!isLast && msg.role === 'assistant' && (
               <div className="h-px w-full bg-light-secondary dark:bg-dark-secondary" />
             )}
             {/* SearchSteps를 메시지 목록 시작 전에 추가 */}
             {/* 마지막 메시지 다음에 SearchSteps 표시 */}
-            {isLast && loading && searchSteps.length > 0 && (
+            {/* {isLast && loading && searchSteps.length > 0 && (
                     <SearchSteps steps={searchSteps} />
-                  )}
+                  )} */}
           </Fragment>
         );
       })}

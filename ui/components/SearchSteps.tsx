@@ -13,32 +13,22 @@ interface SearchStepsProps {
 }
 
 const SearchSteps = ({ steps }: SearchStepsProps) => {
-  const [visibleSteps, setVisibleSteps] = useState<number[]>([]);
+  const [localSteps, setLocalSteps] = useState<SearchStep[]>([]);
 
   useEffect(() => {
-    // 각 단계를 200ms 간격으로 순차적으로 표시
-    steps.forEach((_, index) => {
-      setTimeout(() => {
-        setVisibleSteps(prev => [...prev, index]);
-      }, index * 200);
+    // 새로운 step이 추가될 때마다 누적되도록 변경
+    setLocalSteps((prevSteps) => {
+      const newSteps = steps.filter((step) => !prevSteps.some((s) => s.query === step.query));
+      return [...prevSteps, ...newSteps];
     });
   }, [steps]);
 
   return (
-    <div className="fixed top-16 left-0 right-0 z-50">
+    <div className="w-full">
       <div className="max-w-3xl mx-auto px-4 py-2">
         <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          {steps.map((step, index) => (
-            <div
-              key={index}
-              className={`
-                transform transition-all duration-300 ease-in-out
-                ${visibleSteps.includes(index) 
-                  ? 'translate-y-0 opacity-100' 
-                  : '-translate-y-4 opacity-0 h-0'
-                }
-              `}
-            >
+          {localSteps.map((step, index) => (
+            <div key={index} className="transform transition-all duration-300 ease-in-out">
               <div className="flex items-center space-x-3 px-4 py-2 border-b last:border-b-0 border-gray-100 dark:border-gray-700">
                 <div className="flex-shrink-0">
                   {step.status === 'active' && (
@@ -51,7 +41,6 @@ const SearchSteps = ({ steps }: SearchStepsProps) => {
                     <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
                   )}
                 </div>
-                
                 <div className="flex-grow min-w-0">
                   {step.type === 'search' && (
                     <div className="text-sm">

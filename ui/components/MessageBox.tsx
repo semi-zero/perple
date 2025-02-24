@@ -21,6 +21,16 @@ import SearchImages from './SearchImages';
 import SearchVideos from './SearchVideos';
 
 import { focusModes } from '@/components/MessageInputActions/Focus';
+import SearchSteps from '@/components/SearchSteps';
+
+// 더미 검색 단계 데이터를 관리하기 위한 상태
+interface SearchStep {
+  type: 'search' | 'processing' | 'complete';
+  query?: string;
+  sources?: string[];
+  status: 'pending' | 'active' | 'completed';
+}
+
 
 const MessageBox = ({
   message,
@@ -31,7 +41,8 @@ const MessageBox = ({
   isLast,
   rewrite,
   sendMessage,
-  focusMode
+  focusMode,
+  searchSteps
 }: {
   message: Message;
   messageIndex: number;
@@ -41,7 +52,8 @@ const MessageBox = ({
   isLast: boolean;
   rewrite: (messageId: string) => void;
   sendMessage: (message: string) => void;
-  focusMode: string
+  focusMode: string;
+  searchSteps: SearchStep[];
 }) => {
   const [parsedMessage, setParsedMessage] = useState(message.content);
   const [speechMessage, setSpeechMessage] = useState(message.content);
@@ -97,8 +109,16 @@ const MessageBox = ({
             ref={dividerRef}
             className="flex flex-col space-y-6 w-full lg:w-9/12"
           >
+             {/* SearchSteps를 assistant 메시지 상단에 추가 */}
+             {/* {isLast && loading && searchSteps && searchSteps.length > 0 && ( */}
+              <div className="mb-4">
+                <SearchSteps steps={searchSteps} />
+              </div>
+            
             {message.sources && message.sources.length > 0 && (
+              
               <div className="flex flex-col space-y-6">
+                
                 <div className="flex flex-row items-center space-x-2">
                   <BookOpen className="text-gray-700 dark:text-gray-300" size={20} />
                   <h3 className="text-gray-900 dark:text-gray-100 font-semibold text-lg">
