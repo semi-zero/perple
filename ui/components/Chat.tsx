@@ -32,7 +32,8 @@ interface ChatProps {
   setFileIds: (fileIds: string[]) => void;
   files: File[];
   setFiles: (files: File[]) => void;
-  searchSteps: SearchStep[]; // 추가
+  searchStepsMap: Record<string, SearchStep[]>;
+  getSearchStepsForMessage: (messageId: string) => SearchStep[];
   focusmode: string;
 }
 
@@ -46,7 +47,8 @@ const Chat = ({
   setFileIds,
   files,
   setFiles,
-  searchSteps,
+  searchStepsMap,
+  getSearchStepsForMessage,
   focusMode,
   setFocusMode,
   optimizationMode,
@@ -63,7 +65,8 @@ const Chat = ({
   setFileIds: (fileIds: string[]) => void;
   files: File[];
   setFiles: (files: File[]) => void;
-  searchSteps: SearchStep[]; // 추가
+  searchStepsMap: Record<string, SearchStep[]>;
+  getSearchStepsForMessage: (messageId: string) => SearchStep[];
   focusMode: string;
   setFocusMode: (mode: string) => void;
   optimizationMode: string;
@@ -117,7 +120,8 @@ const Chat = ({
               rewrite={rewrite}
               sendMessage={sendMessage}
               focusMode={focusMode}
-              searchSteps={searchSteps}
+              searchStepsMap={searchStepsMap} 
+              getSearchStepsForMessage={getSearchStepsForMessage}
             />
             {!isLast && msg.role === 'assistant' && (
               <div className="h-px w-full bg-light-secondary dark:bg-dark-secondary" />

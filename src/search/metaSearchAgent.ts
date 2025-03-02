@@ -26,13 +26,22 @@ import eventEmitter from 'events';
 import { StreamEvent } from '@langchain/core/tracers/log_stream';
 import { IterableReadableStream } from '@langchain/core/utils/stream';
 
+interface ExtraMessage {
+  field1: string;
+  field2: string;
+  field3: string;
+}
+
+
 export interface MetaSearchAgentType {
   searchAndAnswer: (
     message: string,
     history: BaseMessage[],
     llm: BaseChatModel,
     embeddings: Embeddings,
+    focusMode: string,
     optimizationMode: string,
+    extraMessage: ExtraMessage,
     fileIds: string[],
   ) => Promise<eventEmitter>;
 }
@@ -46,6 +55,7 @@ interface Config {
   responsePrompt: string;
   activeEngines: string[];
 }
+
 
 type BasicChainInput = {
   chat_history: BaseMessage[];
@@ -249,21 +259,111 @@ class MetaSearchAgent implements MetaSearchAgentType {
     llm: BaseChatModel,
     fileIds: string[],
     embeddings: Embeddings,
+    focusMode: string,
     optimizationMode: string,
+    extraMessage: ExtraMessage
   ) {
 
     // local_experiment
     // optimizationMode = 'quality'
+    console.log('[createAnsweringChain] Focus mode:', focusMode);
     console.log('[createAnsweringChain] Optimization mode:', optimizationMode);
-    if (this.config.activeEngines.includes('pipeline')) {
+
+    if (focusMode === 'writingAssistant'){
+      return RunnableSequence.from([
+        RunnableMap.from({
+          query: (input: BasicChainInput) => input.query,
+          chat_history: (input: BasicChainInput) => input.chat_history,
+          focusMode: () => focusMode,
+          optimizationMode: () => optimizationMode,
+          extraMessage: () => extraMessage,
+        }),
+        RunnableLambda.from(async (input: { 
+          query: string, 
+          chat_history: BaseMessage[] ,
+          focusMode: string,
+          optimizationMode: string,
+          extraMessage: ExtraMessage,
+        }) => {
+          try {
+              console.log('[AnsweringChain] Processing query:', input.query);
+              const history = input.chat_history.map(msg => ({
+                  role: msg._getType() === 'human' ? 'user' : 'assistant',
+                  content: msg.content
+              }));
+              
+              // local_experiment
+              const response = await fetch('http://localhost:8000/api/writingAssistant/chat', {
+              // const response = await fetch('http://fastapi-container:8000/api/chat', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                      message: input.query,
+                      history: history,
+                      focusMode: input.focusMode,
+                      optimizationMode: input.optimizationMode,
+                      extraMessage: input.extraMessage,
+                  })
+              });
+
+              if (!response.ok) {
+                  throw new Error('FastAPI 서버 응답 오류');
+              }
+
+              const textStream = response.body?.pipeThrough(new TextDecoderStream());
+              if (!textStream) throw new Error('응답 스트림을 읽을 수 없습니다');
+              
+              const reader = textStream.getReader();
+              return new ReadableStream({
+                async start(controller) {
+                  try {
+                    while (true) {
+                      const { done, value } = await reader.read();
+                      if (done) break;
+                      console.log('[AnsweringChain] FastAPI value:', value);
+                      
+                      const lines = value.split('\n').filter(line => line.trim());
+                      for (const line of lines) {
+                        try {
+                          const event = JSON.parse(line);
+                          controller.enqueue(event.data);
+                        } catch (e) {
+                          console.error('JSON 파싱 에러:', e);
+                          continue;
+                        }
+                      }
+                    }
+                    controller.close();
+                  } catch (error) {
+                    console.error('스트림 처리 에러:', error);
+                    controller.error(error);
+                  }
+                }
+              });
+          } catch (error) {
+              console.error('[FastAPI 요청 오류]:', error);
+              throw error;
+          }
+        }).withConfig({
+            runName: 'FinalResponseGenerator'
+        })
+      ]);
+    }
+
+    if (focusMode === 'pipelineSearch'){
       return RunnableSequence.from([
         RunnableMap.from({
             query: (input: BasicChainInput) => input.query,
             chat_history: (input: BasicChainInput) => input.chat_history,
+            focusMode: () => focusMode,
+            optimizationMode: () => optimizationMode,
+            extraMessage: () => extraMessage,
             context: RunnableLambda.from(async (input: BasicChainInput) => {
               try {
                 // local_experiment
-                  const response = await fetch('http://localhost:8000/api/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
+                  const response = await fetch('http://localhost:8000/api/pipelineSearch/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
                   // const response = await fetch('http://fastapi-container:8000/api/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
                   method: 'POST',
                   headers: {
@@ -306,6 +406,9 @@ class MetaSearchAgent implements MetaSearchAgentType {
           }),
           RunnableLambda.from(async (input: { query: string, 
                                             chat_history: BaseMessage[],
+                                            focusMode: string,
+                                            optimizationMode: string,
+                                            extraMessage: ExtraMessage,
                                             context: { processed_docs: string, sql_query: string } 
           }) => {
               try {
@@ -317,7 +420,7 @@ class MetaSearchAgent implements MetaSearchAgentType {
                   console.log('[AnsweringChain] Chat history length:', input.chat_history.length);
                   console.log('[AnsweringChain] Context:', input.context);
                   // local_experiment
-                  const response = await fetch('http://localhost:8000/api/chat', {
+                  const response = await fetch('http://localhost:8000/api/pipelineSearch/chat', {
                   // const response = await fetch('http://fastapi-container:8000/api/chat', {
                       method: 'POST',
                       headers: {
@@ -325,7 +428,10 @@ class MetaSearchAgent implements MetaSearchAgentType {
                       },
                       body: JSON.stringify({
                           message: input.query,
-                          history: history
+                          history: history,
+                          focusMode: input.focusMode,
+                          optimizationMode: input.optimizationMode,
+                          extraMessage: input.extraMessage,
                       })
                   });
 
@@ -599,50 +705,6 @@ class MetaSearchAgent implements MetaSearchAgentType {
     emitter: eventEmitter,
   ) {
     console.log('[handleStream] Starting stream processing');
-
-    // if (stream instanceof ReadableStreamDefaultReader) {
-    //   // FastAPI 스트림 처리
-    //   try {
-    //       while (true) {
-    //           const { done, value } = await stream.read();
-    //           if (done) break;
-
-    //           // const text = new TextDecoder().decode(value);
-    //           // const lines = text.split('\n').filter(line => line.trim());
-    //           // 각 줄을 개별적으로 처리
-    //           const lines = value.split('\n').filter(line => line.trim());
-
-    //           for (const line of lines) {
-    //               try {
-    //                   const event = JSON.parse(line);
-    //                   console.log('[AnsweringChain] FastAPI event:', event);
-    //                   emitter.emit('data', JSON.stringify({
-    //                     type: 'response',
-    //                     data: {
-    //                       event: 'on_chain_stream',
-    //                       name: 'FinalResponseGenerator',
-    //                       data: { chunk: event.data }
-    //                     }
-    //                   }));
-    //                   // if (event.type === 'response') {
-    //                   //     emitter.emit('data', JSON.stringify({
-    //                   //         type: 'response',
-    //                   //         data:  event.data.toString()  // 문자열로 변환 확실히
-    //                   //     }));
-    //                   // } else if (event.type === 'end') {
-    //                   //     emitter.emit('end');
-    //                   // }
-    //               } catch (e) {
-    //                   console.error('JSON 파싱 오류:', e);
-    //               }
-    //           }
-    //       }
-    //   } catch (error) {
-    //       console.error('스트림 처리 오류:', error);
-    //       emitter.emit('error', error);
-    //   }
-    // } else {
-      // 기존 LangChain 스트림 처리
       
         for await (const event of stream) {
           if (
@@ -691,14 +753,18 @@ class MetaSearchAgent implements MetaSearchAgentType {
     history: BaseMessage[],
     llm: BaseChatModel,
     embeddings: Embeddings,
+    focusMode: string,
     optimizationMode: string,
+    extraMessage: ExtraMessage,
     fileIds: string[],
   ) {
     console.log('\n[searchAndAnswer] Starting new search');
     console.log('[searchAndAnswer] Message:', message);
     console.log('[searchAndAnswer] History:', history);
     console.log('[searchAndAnswer] History length:', history.length);
+    console.log('[searchAndAnswer] Focus mode:', focusMode);
     console.log('[searchAndAnswer] Optimization mode:', optimizationMode);
+    console.log('[searchAndAnswer] Extra Message:', extraMessage);
     console.log('[searchAndAnswer] File IDs:', fileIds);
     const emitter = new eventEmitter();
 
@@ -706,7 +772,9 @@ class MetaSearchAgent implements MetaSearchAgentType {
       llm,
       fileIds,
       embeddings,
+      focusMode,
       optimizationMode,
+      extraMessage
     );
 
     

@@ -66,7 +66,7 @@ export default function EmptyChatMessageInput({
   //   setMessage('');
   // };
   ////////////////////화살표 방향 기능////////////////////
-  const [isEmptyChat, setIsEmptyChat] = useState(false);
+  const [isEmptyChat, setIsEmptyChat] = useState(true);
   return (
     <form
       onSubmit={(e) => {

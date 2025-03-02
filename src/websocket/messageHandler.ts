@@ -14,6 +14,12 @@ import MetaSearchAgent, {
 import prompts from '../prompts';
 import type { InferModel } from 'drizzle-orm';
 
+interface ExtraMessage {
+  field1: string;
+  field2: string;
+  field3: string;
+}
+
 type Message = {
   messageId: string;
   chatId: string;
@@ -23,9 +29,10 @@ type Message = {
 
 type WSMessage = {
   message: Message;
-  optimizationMode: string;
   type: string;
   focusMode: string;
+  optimizationMode: string;
+  extraMessage: ExtraMessage;
   history: Array<[string, string]>;
   files: Array<string>;
 };
@@ -199,7 +206,9 @@ export const handleMessage = async (
             history,
             llm,
             embeddings,
+            parsedWSMessage.focusMode,
             parsedWSMessage.optimizationMode,
+            parsedWSMessage.extraMessage,
             parsedWSMessage.files,
           );
 
@@ -219,6 +228,8 @@ export const handleMessage = async (
                 title: parsedMessage.content.length > 12 ? parsedMessage.content.slice(0,12)+"...": parsedMessage.content,
                 createdAt: new Date().toString(),
                 focusMode: parsedWSMessage.focusMode,
+                optimizationMode: parsedWSMessage.optimizationMode,
+                extraMessage: parsedWSMessage.extraMessage,
                 files: parsedWSMessage.files.map(getFileDetails),
                 userId: parsedMessage.userId  // userId 추가 (필수 필드)
               } as ChatsInsert)

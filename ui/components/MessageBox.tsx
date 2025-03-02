@@ -42,7 +42,8 @@ const MessageBox = ({
   rewrite,
   sendMessage,
   focusMode,
-  searchSteps
+  searchStepsMap,
+  getSearchStepsForMessage,
 }: {
   message: Message;
   messageIndex: number;
@@ -53,7 +54,8 @@ const MessageBox = ({
   rewrite: (messageId: string) => void;
   sendMessage: (message: string) => void;
   focusMode: string;
-  searchSteps: SearchStep[];
+  searchStepsMap: Record<string, SearchStep[]>;
+  getSearchStepsForMessage: (messageId: string) => SearchStep[];
 }) => {
   const [parsedMessage, setParsedMessage] = useState(message.content);
   const [speechMessage, setSpeechMessage] = useState(message.content);
@@ -111,9 +113,12 @@ const MessageBox = ({
           >
              {/* SearchSteps를 assistant 메시지 상단에 추가 */}
              {/* {isLast && loading && searchSteps && searchSteps.length > 0 && ( */}
-              <div className="mb-4">
-                <SearchSteps steps={searchSteps} />
-              </div>
+             {/* SearchSteps를 assistant 메시지 상단에 추가 */}
+              {answerFocusMode === 'pipelineSearch' && (
+                <div className="mb-4">
+                  <SearchSteps steps={getSearchStepsForMessage(message.messageId)} />
+                </div>
+              )}
             
             {message.sources && message.sources.length > 0 && (
               
@@ -232,7 +237,7 @@ const MessageBox = ({
             </div>
           </div>
 
-          <div className="lg:sticky lg:top-0 flex flex-col items-center space-y-3 w-full lg:w-3/12 z-30 h-full pb-4">
+          <div className=" lg:top-0 flex flex-col items-center space-y-3 w-full lg:w-3/12 h-full pb-4">
           <a href="https://www.naver.com" target="_blank" rel="noopener noreferrer">
               <img 
                 src="https://picsum.photos/400/200" 

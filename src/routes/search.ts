@@ -20,14 +20,21 @@ interface chatModel {
   customOpenAIKey?: string;
 }
 
+interface ExtraMessage {
+  field1: string;
+  field2: string;
+  field3: string;
+}
+
 interface embeddingModel {
   provider: string;
   model: string;
 }
 
 interface ChatRequestBody {
-  optimizationMode: string;
   focusMode: string;
+  optimizationMode: string;
+  extraMessage: ExtraMessage;
   chatModel?: chatModel;
   embeddingModel?: embeddingModel;
   query: string;
@@ -127,7 +134,9 @@ router.post('/', async (req, res) => {
       history,
       llm,
       embeddings,
+      body.focusMode,
       body.optimizationMode,
+      body.extraMessage,
       [],
     );
 

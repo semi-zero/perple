@@ -342,7 +342,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
   const [fileIds, setFileIds] = useState<string[]>([]);
 
   const [focusMode, setFocusMode] = useState('writingAssistant');
-  const [optimizationMode, setOptimizationMode] = useState('rnd');
+  const [optimizationMode, setOptimizationMode] = useState('');
 
   const [isMessagesLoaded, setIsMessagesLoaded] = useState(false);
 
@@ -371,39 +371,9 @@ const ChatWindow = ({ id }: { id?: string }) => {
   }
 
   const [searchSteps, setSearchSteps] = useState<SearchStep[]>([]);
+  // 메시지 ID를 키로 사용하는 검색 단계 맵 상태 추가
+  const [searchStepsMap, setSearchStepsMap] = useState<Record<string, SearchStep[]>>({});
 
-  // 메시지 전송 시 검색 단계를 시뮬레이션하는 함수
-  const simulateSearchSteps = () => {
-    // 검색 시작
-    setSearchSteps([{
-      type: 'search',
-      query: 'latest research papers on battery technology 2025',
-      status: 'active'
-    }]);
-
-    // 1초 후 소스 처리 단계
-    setTimeout(() => {
-      setSearchSteps(prev => [
-        { ...prev[0], status: 'completed' },
-        {
-          type: 'processing',
-          sources: ['rdworldonline', 'cardino', 'idtechex'],
-          status: 'active'
-        }
-      ]);
-    }, 1000);
-
-    // 2초 후 완료 단계
-    // setTimeout(() => {
-    //   setSearchSteps(prev => [
-    //     ...prev.map(step => ({ ...step, status: 'completed' })),
-    //     {
-    //       type: 'complete',
-    //       status: 'completed'
-    //     }
-    //   ]);
-    // }, 2000);
-  };
   
   
 
@@ -470,13 +440,25 @@ const ChatWindow = ({ id }: { id?: string }) => {
 
     setLoading(true);
     setMessageAppeared(false);
-    simulateSearchSteps(); // 검색 단계 시뮬레이션 시작
+
 
     let sources: Document[] | undefined = undefined;
     let recievedMessage = '';
     let added = false;
 
     messageId = messageId ?? crypto.randomBytes(7).toString('hex');
+
+    // focusMode가 pipelineSearch일 때만 검색 단계 초기화
+    if (focusMode === 'pipelineSearch') {
+      setSearchStepsMap(prev => ({
+        ...prev,
+        [messageId]: [{
+          type: 'search',
+          query: message,
+          status: 'active'
+        }]
+      }));
+    }
 
     ws?.send(
       JSON.stringify({
@@ -490,6 +472,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
         files: fileIds,
         focusMode: focusMode,
         optimizationMode: optimizationMode,
+        extraMessage: extraMessage,
         history: [...chatHistory, ['human', message]],
       }),
     );
@@ -520,6 +503,31 @@ const ChatWindow = ({ id }: { id?: string }) => {
       if (data.type === 'sources') {
         sources = data.data;
         console.log('[ChatWindow] 소스 수신 sources:', sources);
+
+        // focusMode가 pipelineSearch일 때만 검색 단계 업데이트
+        if (focusMode === 'pipelineSearch') {
+          setSearchStepsMap(prev => ({
+            ...prev,
+            [data.messageId]: [
+              {
+                type: 'search',
+                query: message,
+                status: 'completed'
+              },
+              {
+                type: 'processing',
+                sources: sources.map((source: Document) => {
+                  if (source.metadata) {
+                    return source.metadata.source || source.metadata.title || source.pageContent?.substring(0, 30) || '알 수 없는 소스';
+                  }
+                  return source.pageContent?.substring(0, 30) || '알 수 없는 소스';
+                }),
+                status: 'active'
+              }
+            ]
+          }));
+        }
+
         if (!added) {
           setMessages((prevMessages) => [
             ...prevMessages,
@@ -538,6 +546,34 @@ const ChatWindow = ({ id }: { id?: string }) => {
       }
 
       if (data.type === 'message') {
+        // 첫 메시지를 받으면 처리 단계를 완료로 표시하고 완료 단계 추가
+        if (focusMode === 'pipelineSearch' && recievedMessage === '') {
+          setSearchStepsMap(prev => ({
+            ...prev,
+            [data.messageId]: [
+              {
+                type: 'search',
+                query: message,
+                status: 'completed'
+              },
+              {
+                type: 'processing',
+                sources: sources?.map((source: Document) => {
+                  if (source.metadata) {
+                    return source.metadata.source || source.metadata.title || source.pageContent?.substring(0, 30) || '알 수 없는 소스';
+                  }
+                  return source.pageContent?.substring(0, 30) || '알 수 없는 소스';
+                }),
+                status: 'completed'
+              },
+              {
+                type: 'complete',
+                status: 'active'
+              }
+            ]
+          }));
+        }
+
         if (!added) {
           setMessages((prevMessages) => [
             ...prevMessages,
@@ -568,6 +604,18 @@ const ChatWindow = ({ id }: { id?: string }) => {
       }
 
       if (data.type === 'messageEnd') {
+
+        if (focusMode === 'pipelineSearch') {
+          setSearchStepsMap(prev => {
+            const currentSteps = prev[data.messageId] || [];
+            return {
+              ...prev,
+              [data.messageId]: currentSteps.map(step => ({...step, status: 'completed'}))
+            };
+          });
+        }
+
+
         console.log('[ChatWindow] 메시지 수신 완료');
         setChatHistory((prevHistory) => [
           ...prevHistory,
@@ -601,6 +649,12 @@ const ChatWindow = ({ id }: { id?: string }) => {
 
     ws?.addEventListener('message', messageHandler);
   };
+
+  // 메시지 컴포넌트에 검색 단계 전달을 위한 함수
+  const getSearchStepsForMessage = (messageId: string) => {
+    return searchStepsMap[messageId] || [];
+  };
+
 
   const rewrite = (messageId: string) => {
     console.log('[ChatWindow] 메시지 재작성:', messageId);
@@ -662,7 +716,8 @@ const ChatWindow = ({ id }: { id?: string }) => {
               setFileIds={setFileIds}
               files={files}
               setFiles={setFiles}
-              searchSteps={searchSteps} /* searchSteps prop 추가 */
+              searchStepsMap={searchStepsMap} // searchSteps 대신 searchStepsMap 전달
+              getSearchStepsForMessage={getSearchStepsForMessage} // 함수 전달
               focusMode={focusMode}
               setFocusMode={setFocusMode}
               optimizationMode={optimizationMode}

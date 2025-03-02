@@ -1,6 +1,12 @@
 import { sql } from 'drizzle-orm';
 import { text, integer, pgTable, jsonb, uuid, serial } from 'drizzle-orm/pg-core';
 
+interface ExtraMessage {
+  field1: string;
+  field2: string;
+  field3: string;
+}
+
 // 사용자 테이블
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -22,6 +28,8 @@ export const chats = pgTable('chats', {
   title: text('title').notNull(),
   createdAt: text('createdAt').notNull(),
   focusMode: text('focusMode').notNull(),
+  optimizationMode: text('optimizationMode').notNull(),
+  extreMessage: jsonb('extraMessage').$type<ExtraMessage[]>(),
   files: jsonb('files').$type<File[]>(), // 변경된 부분: chats 테이블에 spaceId 추가 및 spaces 테이블 참조
   spaceId: uuid('spaceId').references(() => spaces.id, { onDelete: 'set null' }),
   userId: uuid('userId').notNull().references(() => users.id)

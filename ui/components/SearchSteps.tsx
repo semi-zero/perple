@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { CheckCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 interface SearchStep {
@@ -13,22 +13,12 @@ interface SearchStepsProps {
 }
 
 const SearchSteps = ({ steps }: SearchStepsProps) => {
-  const [localSteps, setLocalSteps] = useState<SearchStep[]>([]);
-
-  useEffect(() => {
-    // 새로운 step이 추가될 때마다 누적되도록 변경
-    setLocalSteps((prevSteps) => {
-      const newSteps = steps.filter((step) => !prevSteps.some((s) => s.query === step.query));
-      return [...prevSteps, ...newSteps];
-    });
-  }, [steps]);
-
   return (
     <div className="w-full">
       <div className="max-w-3xl mx-auto px-4 py-2">
         <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          {localSteps.map((step, index) => (
-            <div key={index} className="transform transition-all duration-300 ease-in-out">
+          {steps.map((step, index) => (
+            <div key={`${step.type}-${index}`} className="transform transition-all duration-300 ease-in-out">
               <div className="flex items-center space-x-3 px-4 py-2 border-b last:border-b-0 border-gray-100 dark:border-gray-700">
                 <div className="flex-shrink-0">
                   {step.status === 'active' && (
@@ -52,14 +42,20 @@ const SearchSteps = ({ steps }: SearchStepsProps) => {
                     <div className="text-sm">
                       <span className="font-medium text-gray-700 dark:text-gray-300">검색 소스: </span>
                       <span className="text-gray-600 dark:text-gray-400">
-                        {step.sources?.map((source, i) => (
-                          <span key={source} className="inline-flex items-center">
-                            <span className="px-2 py-1 mx-1 bg-gray-100 dark:bg-gray-700 rounded">
-                              {source}
+                        {step.sources && step.sources.length > 0 ? (
+                          step.sources.map((source, i) => (
+                            <span key={`${source}-${i}`} className="inline-flex items-center">
+                              <span className="px-2 py-1 mx-1 bg-gray-100 dark:bg-gray-700 rounded">
+                                {source}
+                              </span>
+                              {i < (step.sources?.length || 0) - 1 && ' '}
                             </span>
-                            {i < (step.sources?.length || 0) - 1 && ', '}
+                          ))
+                        ) : (
+                          <span className="px-2 py-1 mx-1 bg-gray-100 dark:bg-gray-700 rounded">
+                            정보 처리 중...
                           </span>
-                        ))}
+                        )}
                       </span>
                     </div>
                   )}

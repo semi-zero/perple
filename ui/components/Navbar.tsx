@@ -103,7 +103,6 @@ const Navbar = ({
     }
   };
 
-  console.log('[Navbar]:', chatId)
 
   // 날짜/시간 포매팅 함수(예시)
   const formatDateTime = (datetime: string) => {
@@ -120,7 +119,7 @@ const Navbar = ({
   return (
     <div className={`fixed top-0 right-0 px-4 lg:pr-[60px] flex flex-row items-center justify-between py-3 
       text-sm text-black dark:text-white/80 border-b bg-white/80 dark:bg-dark-primary/80 backdrop-blur-md
-      transition-all duration-300 ${
+      transition-all duration-300 z-50 ${
         isSidebarOpen 
           ? 'left-64 lg:pl-[60px]' 
           : 'left-24 lg:pl-[40px]'
