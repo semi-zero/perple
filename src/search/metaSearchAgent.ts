@@ -264,8 +264,6 @@ class MetaSearchAgent implements MetaSearchAgentType {
     extraMessage: ExtraMessage
   ) {
 
-    // local_experiment
-    // optimizationMode = 'quality'
     console.log('[createAnsweringChain] Focus mode:', focusMode);
     console.log('[createAnsweringChain] Optimization mode:', optimizationMode);
 
@@ -293,8 +291,8 @@ class MetaSearchAgent implements MetaSearchAgentType {
               }));
               
               // local_experiment
-              const response = await fetch('http://localhost:8000/api/writingAssistant/chat', {
-              // const response = await fetch('http://fastapi-container:8000/api/chat', {
+              //const response = await fetch('http://localhost:8000/api/writingAssistant/chat', {
+              const response = await fetch('http://fastapi-container:8000/api/writingAssistant/chat', {
                   method: 'POST',
                   headers: {
                       'Content-Type': 'application/json',
@@ -363,8 +361,8 @@ class MetaSearchAgent implements MetaSearchAgentType {
             context: RunnableLambda.from(async (input: BasicChainInput) => {
               try {
                 // local_experiment
-                  const response = await fetch('http://localhost:8000/api/pipelineSearch/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
-                  // const response = await fetch('http://fastapi-container:8000/api/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
+                  //const response = await fetch('http://localhost:8000/api/pipelineSearch/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
+                  const response = await fetch('http://fastapi-container:8000/pipelineSearch/chat/docs', {  // 문서만 받아오는 새로운 엔드포인트
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -420,8 +418,8 @@ class MetaSearchAgent implements MetaSearchAgentType {
                   console.log('[AnsweringChain] Chat history length:', input.chat_history.length);
                   console.log('[AnsweringChain] Context:', input.context);
                   // local_experiment
-                  const response = await fetch('http://localhost:8000/api/pipelineSearch/chat', {
-                  // const response = await fetch('http://fastapi-container:8000/api/chat', {
+                  //const response = await fetch('http://localhost:8000/api/pipelineSearch/chat', {
+                  const response = await fetch('http://fastapi-container:8000/api/pipelineSearch/chat', {
                       method: 'POST',
                       headers: {
                           'Content-Type': 'application/json',

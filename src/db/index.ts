@@ -3,21 +3,21 @@ import {Pool} from 'pg';
 import * as schema from './schema';
 
 // local_experiment
-const pool = new Pool({
-  host: 'localhost',
-  port: 5432, 
-  user: 'postgres',
-  password: '1234',
-  database: 'postgres',
-});
-
 // const pool = new Pool({
-//   host: 'perplexica-postgres',
+//   host: 'localhost',
 //   port: 5432, 
 //   user: 'postgres',
 //   password: '1234',
 //   database: 'postgres',
 // });
+
+const pool = new Pool({
+  host: 'perplexica-postgres',
+  port: 5432, 
+  user: 'postgres',
+  password: '1234',
+  database: 'postgres',
+});
 
 
 pool.on('connect', () => {

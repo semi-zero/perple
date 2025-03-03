@@ -516,7 +516,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
               },
               {
                 type: 'processing',
-                sources: sources.map((source: Document) => {
+                sources: sources?.map((source: Document) => {
                   if (source.metadata) {
                     return source.metadata.source || source.metadata.title || source.pageContent?.substring(0, 30) || '알 수 없는 소스';
                   }

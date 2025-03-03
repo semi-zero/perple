@@ -61,7 +61,7 @@ const Navbar = ({
     return () => clearInterval(intervalId);
   }, [messages]);
 
-  const messagesCreatedAt = messages[0]?.createdAt || messages[0]?.metadata?.createdAt;
+  const messagesCreatedAt = messages[0]?.createdAt || (messages[0] as any)?.metadata?.createdAt;
 
 
 

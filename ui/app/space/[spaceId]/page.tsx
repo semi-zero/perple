@@ -28,7 +28,7 @@ const Page = () => {
   
   ////////////////////공간, 채팅 목록 관련 기능////////////////////
   const [chats, setChats] = useState<Chat[]>([]);
-  const [spaces, setSpaces] = useState<SpaceItem[]>([]);
+  const [spaces, setSpaces] = useState<SpaceItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { spaceId } = useParams(); // Next.js 13+ App Router 환경에서 사용
 
@@ -160,7 +160,7 @@ const Page = () => {
       mt-4 py-6 px-6 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <BookOpenText className="w-7 h-7 text-gray-700 dark:text-gray-300" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{spaces.spaceName}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{spaces?.spaceName}</h1>
         </div>
         <input
           type="text"
