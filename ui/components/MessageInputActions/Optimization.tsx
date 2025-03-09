@@ -8,7 +8,7 @@ import {
 } from '@headlessui/react';
 import { Fragment } from 'react';
 
-const OptimizationModes = [
+export const OptimizationModes = [
   {
     key: 'speed',
     title: 'Speed',

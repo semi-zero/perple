@@ -117,28 +117,28 @@ const Navbar = ({
   };
 
   return (
-    <div className={`fixed top-0 right-0 px-4 lg:pr-[60px] flex flex-row items-center justify-between py-3 
+    <div className={`fixed top-0 right-0 px-4 lg:pr-[60px] flex flex-row items-center justify-between py-3
       text-sm text-black dark:text-white/80 border-b bg-white/80 dark:bg-dark-primary/80 backdrop-blur-md
-      transition-all duration-300 z-50 ${
+      transition-all duration-300 z-9999 ${
         isSidebarOpen 
           ? 'left-64 lg:pl-[60px]' 
           : 'left-24 lg:pl-[40px]'
       }`}>
         
       <div className="flex items-center space-x-2">
-        <Clock size={16} />
+        <Clock className="h-5 w-5" />
         <p className="text-sm font-medium">{formatDateTime(messagesCreatedAt.toString())}</p>
       </div>
       <p className="text-sm font-semibold truncate w-1/2 text-center">{title}</p>
-      <div className="flex flex-row items-center space-x-3">
+      <div className="flex flex-row items-center">
         <button className="p-2.5 cursor-pointer rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">
-          <Share size={16} />
+          <Share className="h-5 w-5" />
         </button>
         <button 
         className="p-2.5 cursor-pointer rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200  text-red-500"
         onClick={() => openDeleteConfirmModal(chatId)}
         >
-          <Trash size={16} />
+          <Trash className="h-5 w-5" />
         </button>
         {/* <DeleteChat redirect chatId={chatId} chats={[]} setChats={() => {}} /> */}
 

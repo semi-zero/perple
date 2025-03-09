@@ -42,7 +42,10 @@ export const messages = pgTable('messages', {
   messageId: text('messageId').notNull(),
   role: text('role', { enum: ['assistant', 'user'] }).notNull(),
   metadata: jsonb('metadata').default({}).$type<Record<string, any> | null>(),
-  chatId: text('chatId').notNull().references(() => chats.id)
+  chatId: text('chatId').notNull().references(() => chats.id),
+  focusMode: text('focusMode').notNull(),
+  optimizationMode: text('optimizationMode').notNull(),
+  extreMessage: jsonb('extraMessage').$type<ExtraMessage[]>(),
 });
 
 // 공간 - 사용자 (M:N 관계) (기존과 동일)

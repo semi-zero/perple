@@ -10,9 +10,10 @@ import SearchSteps from '@/components/SearchSteps';
 
 // 더미 검색 단계 데이터를 관리하기 위한 상태
 interface SearchStep {
-  type: 'search' | 'processing' | 'complete';
+  type: 'start' | 'search' | 'processing' | 'complete';
   query?: string;
   sources?: string[];
+  description?: string; // 설명을 위한 새로운 필드 추가
   status: 'pending' | 'active' | 'completed';
 }
 
@@ -126,11 +127,6 @@ const Chat = ({
             {!isLast && msg.role === 'assistant' && (
               <div className="h-px w-full bg-light-secondary dark:bg-dark-secondary" />
             )}
-            {/* SearchSteps를 메시지 목록 시작 전에 추가 */}
-            {/* 마지막 메시지 다음에 SearchSteps 표시 */}
-            {/* {isLast && loading && searchSteps.length > 0 && (
-                    <SearchSteps steps={searchSteps} />
-                  )} */}
           </Fragment>
         );
       })}

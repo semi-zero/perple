@@ -33,7 +33,7 @@ export const focusModes = [
   },
   {
     key: 'pipelineSearch',
-    title: 'Pipeline',
+    title: 'Pipeline 검색',
     description: '파이프라인에서 R&D 데이터 검색',
     icon: <Globe size={20} />,
   },

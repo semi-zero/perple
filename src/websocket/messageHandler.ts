@@ -99,6 +99,7 @@ const handleEmitterEvents = (
   ws: WebSocket,
   messageId: string,
   chatId: string,
+  parsedWSMessage: WSMessage,
 ) => {
   let recievedMessage = '';
   let sources = [];
@@ -125,6 +126,7 @@ const handleEmitterEvents = (
       sources = parsedData.data;
     }
   });
+  
   emitter.on('end', () => {
     ws.send(JSON.stringify({ type: 'messageEnd', messageId: messageId }));
     
@@ -140,6 +142,9 @@ const handleEmitterEvents = (
           createdAt: new Date(),
           ...(sources && sources.length > 0 && { sources }),
         },
+        focusMode: parsedWSMessage.focusMode,
+        optimizationMode: parsedWSMessage.optimizationMode,
+        extraMessage: parsedWSMessage.extraMessage,
       } as MessagesInsert)
       .execute();
   });
@@ -212,7 +217,11 @@ export const handleMessage = async (
             parsedWSMessage.files,
           );
 
-          handleEmitterEvents(emitter, ws, aiMessageId, parsedMessage.chatId);
+          handleEmitterEvents(emitter, 
+            ws, 
+            aiMessageId, 
+            parsedMessage.chatId,
+            parsedWSMessage);
 
           const chat = await db.query.chats.findFirst({
             where: eq(chats.id, parsedMessage.chatId),
@@ -253,6 +262,9 @@ export const handleMessage = async (
                 metadata: {
                   createdAt: new Date(),
                 },
+                focusMode: parsedWSMessage.focusMode,
+                optimizationMode: parsedWSMessage.optimizationMode,
+                extraMessage: parsedWSMessage.extraMessage,
               } as MessagesInsert)
               .execute();
           } else {

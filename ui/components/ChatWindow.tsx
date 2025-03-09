@@ -12,6 +12,7 @@ import { getSuggestions } from '@/lib/actions';
 import Error from 'next/error';
 import { motion } from 'framer-motion';
 import SearchSteps from '@/components/SearchSteps';
+import { OptimizationModes } from './MessageInputActions/Optimization';
 
 
 export type Message = {
@@ -22,6 +23,8 @@ export type Message = {
   role: 'user' | 'assistant';
   suggestions?: string[];
   sources?: Document[];
+  focusMode?: string; // focusMode 필드 추가
+  optimizationMode?: string; // optimizationMode 필드 추가
 };
 
 export interface File {
@@ -254,6 +257,15 @@ const useSocket = (
   return ws;
 };
 
+// 더미 검색 단계 데이터를 관리하기 위한 상태
+interface SearchStep {
+  type: 'start' | 'search' | 'processing' | 'complete';
+  query?: string;
+  sources?: string[];
+  description?: string; // 설명을 위한 새로운 필드 추가
+  status: 'pending' | 'active' | 'completed';
+}
+
 const loadMessages = async (
   chatId: string,
   setMessages: (messages: Message[]) => void,
@@ -263,6 +275,8 @@ const loadMessages = async (
   setNotFound: (notFound: boolean) => void,
   setFiles: (files: File[]) => void,
   setFileIds: (fileIds: string[]) => void,
+  setSearchStepsMap: (map: Record<string, SearchStep[]>) => void, // 새로운 파라미터 추가
+  setOptimizationMode: (mode: string) => void, // 새로운 파라미터 추가
 ) => {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/chats/${chatId}`,
@@ -286,10 +300,70 @@ const loadMessages = async (
     return {
       ...msg,
       metadata: msg.metadata || {},
-    };
-  }) as Message[];
+      sources: msg.metadata?.sources ?? [], // 메시지 타입의 sources 필드에 할당
+      focusMode: msg.focusMode, // 메시지에서 focusMode 가져오기
+      optimizationMode: msg.optimizationMode, // 메시지에서 optimizationMode 가져오기
+    } as Message;
+  });
 
+  console.log('[DEBUG] messages:', messages);
   setMessages(messages);
+  // optimizationMode 설정 추가
+  // if (data.chat.optimizationMode) {
+  //   setOptimizationMode(data.chat.optimizationMode);
+  // }
+
+  // 메시지에서 searchSteps 정보 추출하여 searchStepsMap 초기화
+  const newSearchStepsMap: Record<string, SearchStep[]> = {};
+  
+  // 사용자와 어시스턴트 메시지 쌍을 찾아 처리
+  for (let i = 0; i < messages.length; i++) {
+    if (messages[i].role === 'assistant' && i > 0 && messages[i-1].role === 'user') {
+      const userMessage = messages[i-1];
+      const assistantMessage = messages[i];
+      
+      // focusMode가 pipelineSearch인 메시지에 대해서만 처리
+      if (data.chat.focusMode === 'pipelineSearch') {
+        // 각 메시지의 optimizationMode를 사용
+        const messageOptimizationMode = assistantMessage.optimizationMode || data.chat.optimizationMode;
+        const currentOptimizationMode = OptimizationModes.find(
+          mode => mode.key === messageOptimizationMode
+        );
+        const searchDescription = currentOptimizationMode 
+          ? `${currentOptimizationMode.description}에서 검색`
+          : '검색 중';
+
+        newSearchStepsMap[assistantMessage.messageId] = [
+          {
+            type: 'start',
+            query: userMessage.content,
+            status: 'completed'
+          },
+          {
+            type: 'search',
+            description: searchDescription,
+            status: 'completed'
+          },
+          {
+            type: 'processing',
+            sources: assistantMessage.sources?.map((source: Document) => {
+              if (source.metadata) {
+                return source.metadata.source || source.metadata.title || source.pageContent?.substring(0, 30) || '알 수 없는 소스';
+              }
+              return source.pageContent?.substring(0, 30) || '알 수 없는 소스';
+            }),
+            status: 'completed'
+          },
+          {
+            type: 'complete',
+            status: 'completed'
+          }
+        ];
+      }
+    }
+  }
+  
+  setSearchStepsMap(newSearchStepsMap);
 
   const history = messages.map((msg) => {
     return [msg.role, msg.content];
@@ -297,7 +371,10 @@ const loadMessages = async (
 
   console.log('[DEBUG] messages loaded');
 
-  document.title = messages[0].content;
+  // messages 배열이 비어있지 않을 때만 제목 설정
+  if (messages.length > 0) {
+    document.title = messages[0].content;
+  }
 
   const files = data.chat.files.map((file: any) => {
     return {
@@ -306,6 +383,7 @@ const loadMessages = async (
       fileId: file.fileId,
     };
   });
+
 
   setFiles(files);
   setFileIds(files.map((file: File) => file.fileId));
@@ -363,16 +441,22 @@ const ChatWindow = ({ id }: { id?: string }) => {
   };
 
   // 더미 검색 단계 데이터를 관리하기 위한 상태
-  interface SearchStep {
-    type: 'search' | 'processing' | 'complete';
-    query?: string;
-    sources?: string[];
-    status: 'pending' | 'active' | 'completed';
-  }
+  // interface SearchStep {
+  //   type: 'search' | 'processing' | 'complete';
+  //   query?: string;
+  //   sources?: string[];
+  //   status: 'pending' | 'active' | 'completed';
+  // }
 
   const [searchSteps, setSearchSteps] = useState<SearchStep[]>([]);
   // 메시지 ID를 키로 사용하는 검색 단계 맵 상태 추가
   const [searchStepsMap, setSearchStepsMap] = useState<Record<string, SearchStep[]>>({});
+  
+  const optimizationModeKey = OptimizationModes.find(mode => mode.key === optimizationMode);
+  console.log('[DEBUG] optimizationModeKey:', optimizationModeKey);
+  const searchDescription = optimizationModeKey 
+    ? `${optimizationModeKey.description}에서 검색`
+    : '검색 중';
 
   
   
@@ -395,6 +479,8 @@ const ChatWindow = ({ id }: { id?: string }) => {
         setNotFound,
         setFiles,
         setFileIds,
+        setSearchStepsMap, // 새로운 파라미터 전달
+        setOptimizationMode  // 새로운 파라미터 전달
       );
     } else if (!chatId) {
       console.log('[ChatWindow] 새 채팅 생성');
@@ -452,11 +538,18 @@ const ChatWindow = ({ id }: { id?: string }) => {
     if (focusMode === 'pipelineSearch') {
       setSearchStepsMap(prev => ({
         ...prev,
-        [messageId]: [{
-          type: 'search',
+        [messageId]: [
+          {
+          type: 'start',
           query: message,
+          status: 'completed'
+        },
+        {
+          type: 'search',
+          description: searchDescription,
           status: 'active'
-        }]
+        },
+      ]
       }));
     }
 
@@ -510,8 +603,13 @@ const ChatWindow = ({ id }: { id?: string }) => {
             ...prev,
             [data.messageId]: [
               {
-                type: 'search',
+                type: 'start',
                 query: message,
+                status: 'completed'
+              },
+              {
+                type: 'search',
+                description: searchDescription,
                 status: 'completed'
               },
               {
@@ -552,8 +650,13 @@ const ChatWindow = ({ id }: { id?: string }) => {
             ...prev,
             [data.messageId]: [
               {
-                type: 'search',
+                type: 'start',
                 query: message,
+                status: 'completed'
+              },
+              {
+                type: 'search',
+                description: searchDescription,
                 status: 'completed'
               },
               {
@@ -628,22 +731,22 @@ const ChatWindow = ({ id }: { id?: string }) => {
 
         const lastMsg = messagesRef.current[messagesRef.current.length - 1];
 
-        if (
-          lastMsg.role === 'assistant' &&
-          lastMsg.sources &&
-          lastMsg.sources.length > 0 &&
-          !lastMsg.suggestions
-        ) {
-          const suggestions = await getSuggestions(messagesRef.current);
-          setMessages((prev) =>
-            prev.map((msg) => {
-              if (msg.messageId === lastMsg.messageId) {
-                return { ...msg, suggestions: suggestions };
-              }
-              return msg;
-            }),
-          );
-        }
+        // if (
+        //   lastMsg.role === 'assistant' &&
+        //   lastMsg.sources &&
+        //   lastMsg.sources.length > 0 &&
+        //   !lastMsg.suggestions
+        // ) {
+        //   const suggestions = await getSuggestions(messagesRef.current);
+        //   setMessages((prev) =>
+        //     prev.map((msg) => {
+        //       if (msg.messageId === lastMsg.messageId) {
+        //         return { ...msg, suggestions: suggestions };
+        //       }
+        //       return msg;
+        //     }),
+        //   );
+        // }
       }
     };
 

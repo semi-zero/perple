@@ -25,9 +25,10 @@ import SearchSteps from '@/components/SearchSteps';
 
 // 더미 검색 단계 데이터를 관리하기 위한 상태
 interface SearchStep {
-  type: 'search' | 'processing' | 'complete';
+  type: 'start' | 'search' | 'processing' | 'complete';
   query?: string;
   sources?: string[];
+  description?: string; // 설명을 위한 새로운 필드 추가
   status: 'pending' | 'active' | 'completed';
 }
 
@@ -84,7 +85,9 @@ const MessageBox = ({
   const { speechStatus, start, stop } = useSpeech({ text: speechMessage });
 
   /////////////////////focusMode 추가 /////////////////////
-  const [answerFocusMode] = useState(focusMode)
+  // 메시지에 저장된 focusMode를 우선 사용하고, 없으면 상위 컴포넌트에서 전달받은 focusMode 사용
+  const messageFocusMode = message.focusMode || focusMode;
+  // const [answerFocusMode] = useState(focusMode)
   const getFocusModeIcon = (modeKey:string) => {
     const selectedMode = focusModes.find((m)=> m.key === modeKey);
     return selectedMode?.icon;
@@ -114,8 +117,8 @@ const MessageBox = ({
              {/* SearchSteps를 assistant 메시지 상단에 추가 */}
              {/* {isLast && loading && searchSteps && searchSteps.length > 0 && ( */}
              {/* SearchSteps를 assistant 메시지 상단에 추가 */}
-              {answerFocusMode === 'pipelineSearch' && (
-                <div className="mb-4">
+              {messageFocusMode === 'pipelineSearch' && (
+                <div>
                   <SearchSteps steps={getSearchStepsForMessage(message.messageId)} />
                 </div>
               )}
@@ -147,10 +150,10 @@ const MessageBox = ({
                   </div>
                   <div className="flex flex-row items-center space-x-1">
                     <div className="text-blue-500 dark:text-gray-100 text-xs">
-                      {getFocusModeIcon(answerFocusMode)}
+                      {getFocusModeIcon(messageFocusMode)}
                     </div>
                     <div className="text-blue-500 dark:text-gray-100 text-xs">
-                      {getFocusModeTitle(answerFocusMode)}
+                      {getFocusModeTitle(messageFocusMode)}
                     </div>
                   </div>
                 </div>
@@ -242,7 +245,7 @@ const MessageBox = ({
               <img 
                 src="https://picsum.photos/400/200" 
                 alt="Random placeholder"
-                className="w-full h-[200px] object-cover rounded-lg cursor-pointer"
+                className="w-full h-[208px] object-cover rounded-lg cursor-pointer"
               />
             </a>
             {/* check */}

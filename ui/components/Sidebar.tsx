@@ -200,7 +200,7 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
     <div className="lg:flex">
       {/* ------------ 사이드바 영역 ------------ */}
       {/* 사이드바 영역 - 동적 클래스 적용 */}
-      <div className={`hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col bg-gray-40 dark:bg-dark-primary/80 px-4 py-4 rounded-lg backdrop-blur-md shadow-lg h-full overflow-y-auto transition-all duration-300 ${
+      <div className={`hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col bg-gray-40 dark:bg-dark-primary/80 px-4 py-3 rounded-lg backdrop-blur-md shadow-lg h-full overflow-y-auto transition-all duration-300 ${
         isSidebarOpen ? 'lg:w-64' : 'lg:w-24 flex items-center'
       }`}>
         <div className="flex flex-col h-full items-center w-full">
