@@ -86,8 +86,11 @@ const MessageBox = ({
 
   /////////////////////focusMode 추가 /////////////////////
   // 메시지에 저장된 focusMode를 우선 사용하고, 없으면 상위 컴포넌트에서 전달받은 focusMode 사용
-  const messageFocusMode = message.focusMode || focusMode;
+  // const messageFocusMode = message.focusMode || focusMode;
   // const [answerFocusMode] = useState(focusMode)
+  const [messageFocusMode, setMessageFocusMode] = useState(
+    message.focusMode || focusMode
+  );
   const getFocusModeIcon = (modeKey:string) => {
     const selectedMode = focusModes.find((m)=> m.key === modeKey);
     return selectedMode?.icon;

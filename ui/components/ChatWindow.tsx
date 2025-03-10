@@ -322,8 +322,11 @@ const loadMessages = async (
       const userMessage = messages[i-1];
       const assistantMessage = messages[i];
       
+      // 각 메시지의 focusMode를 확인
+      const messageFocusMode = assistantMessage.focusMode || data.chat.focusMode;
+
       // focusMode가 pipelineSearch인 메시지에 대해서만 처리
-      if (data.chat.focusMode === 'pipelineSearch') {
+      if (messageFocusMode === 'pipelineSearch') {
         // 각 메시지의 optimizationMode를 사용
         const messageOptimizationMode = assistantMessage.optimizationMode || data.chat.optimizationMode;
         const currentOptimizationMode = OptimizationModes.find(
@@ -389,7 +392,14 @@ const loadMessages = async (
   setFileIds(files.map((file: File) => file.fileId));
 
   setChatHistory(history);
-  setFocusMode(data.chat.focusMode);
+  
+  // 마지막 메시지의 focusMode를 우선적으로 사용하고, 없으면 채팅 전체의 focusMode 사용
+  if (messages.length > 0 && messages[messages.length - 1].focusMode) {
+    setFocusMode(messages[messages.length - 1].focusMode);
+  } else {
+    setFocusMode(data.chat.focusMode);
+  }
+  
   setIsMessagesLoaded(true);
 };
 
@@ -536,21 +546,47 @@ const ChatWindow = ({ id }: { id?: string }) => {
 
     // focusMode가 pipelineSearch일 때만 검색 단계 초기화
     if (focusMode === 'pipelineSearch') {
-      setSearchStepsMap(prev => ({
-        ...prev,
-        [messageId]: [
+
+       // 초기 상태 설정 - start는 active로 시작
+      setSearchStepsMap(prev => {
+        const newMap = {...prev};
+        newMap[messageId] = [
           {
-          type: 'start',
-          query: message,
-          status: 'completed'
-        },
-        {
-          type: 'search',
-          description: searchDescription,
-          status: 'active'
-        },
-      ]
-      }));
+            type: 'start',
+            query: message,
+            status: 'active'
+          },
+          {
+            type: 'search',
+            description: searchDescription,
+            status: 'pending'
+          }
+        ];
+        return newMap;
+      });
+
+      // 즉시 start 단계를 completed로 변경하고 search 단계를 active로 변경
+      setTimeout(() => {
+        setSearchStepsMap(prev => {
+          const currentSteps = prev[messageId] || [];
+          if (currentSteps.length >= 2) {
+            return {
+              ...prev,
+              [messageId]: [
+                {
+                  ...currentSteps[0],
+                  status: 'completed'
+                },
+                {
+                  ...currentSteps[1],
+                  status: 'active'
+                }
+              ]
+            };
+          }
+          return prev;
+        });
+      }, 500); // 0.5초 후에 상태 변경
     }
 
     ws?.send(
@@ -579,7 +615,8 @@ const ChatWindow = ({ id }: { id?: string }) => {
         role: 'user' as const,  // 'as const'를 추가하여 리터럴 타입으로 명시
         createdAt: new Date(),
         suggestions: undefined,  // 선택적 필드 명시적으로 추가
-        sources: undefined      // 선택적 필드 명시적으로 추가
+        sources: undefined,      // 선택적 필드 명시적으로 추가
+        focusMode: focusMode     // 현재 선택된 focusMode 저장
       },
     ]);
 
@@ -636,6 +673,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
               role: 'assistant',
               sources: sources,
               createdAt: new Date(),
+              focusMode: focusMode  // 현재 선택된 focusMode 저장
             },
           ]);
           added = true;
@@ -687,6 +725,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
               role: 'assistant',
               sources: sources,
               createdAt: new Date(),
+              focusMode: focusMode  // 현재 선택된 focusMode 저장
             },
           ]);
           added = true;
@@ -753,10 +792,11 @@ const ChatWindow = ({ id }: { id?: string }) => {
     ws?.addEventListener('message', messageHandler);
   };
 
-  // 메시지 컴포넌트에 검색 단계 전달을 위한 함수
-  const getSearchStepsForMessage = (messageId: string) => {
-    return searchStepsMap[messageId] || [];
-  };
+  /// 메시지 컴포넌트에 검색 단계 전달을 위한 함수 개선
+const getSearchStepsForMessage = (messageId: string) => {
+  console.log(`[DEBUG] 메시지 ID ${messageId}에 대한 검색 단계 요청:`, searchStepsMap[messageId]);
+  return searchStepsMap[messageId] || [];
+};
 
 
   const rewrite = (messageId: string) => {
@@ -766,6 +806,8 @@ const ChatWindow = ({ id }: { id?: string }) => {
     if (index === -1) return;
 
     const message = messages[index - 1];
+    // 메시지의 focusMode를 임시 저장
+    const messageFocusMode = message.focusMode;
 
     setMessages((prev) => {
       return [...prev.slice(0, messages.length > 2 ? index - 1 : 0)];
@@ -773,6 +815,11 @@ const ChatWindow = ({ id }: { id?: string }) => {
     setChatHistory((prev) => {
       return [...prev.slice(0, messages.length > 2 ? index - 1 : 0)];
     });
+
+    // 메시지 재작성 시 원래 메시지의 focusMode 사용
+    if (messageFocusMode) {
+      setFocusMode(messageFocusMode);
+    }
 
     sendMessage(message.content, message.messageId);
   };
