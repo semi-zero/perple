@@ -565,29 +565,21 @@ const ChatWindow = ({ id }: { id?: string }) => {
         return newMap;
       });
 
-      // 즉시 start 단계를 completed로 변경하고 search 단계를 active로 변경
-      setTimeout(() => {
-        setSearchStepsMap(prev => {
-          const currentSteps = prev[messageId] || [];
-          if (currentSteps.length >= 2) {
-            return {
-              ...prev,
-              [messageId]: [
-                {
-                  ...currentSteps[0],
-                  status: 'completed'
-                },
-                {
-                  ...currentSteps[1],
-                  status: 'active'
-                }
-              ]
-            };
-          }
-          return prev;
-        });
-      }, 500); // 0.5초 후에 상태 변경
     }
+
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      {
+        content: message,
+        messageId: messageId!,
+        chatId: chatId!,
+        role: 'user' as const,  // 'as const'를 추가하여 리터럴 타입으로 명시
+        createdAt: new Date(),
+        suggestions: undefined,  // 선택적 필드 명시적으로 추가
+        sources: undefined,      // 선택적 필드 명시적으로 추가
+        focusMode: focusMode     // 현재 선택된 focusMode 저장
+      },
+    ]);
 
     ws?.send(
       JSON.stringify({
@@ -606,19 +598,33 @@ const ChatWindow = ({ id }: { id?: string }) => {
       }),
     );
 
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      {
-        content: message,
-        messageId: messageId!,
-        chatId: chatId!,
-        role: 'user' as const,  // 'as const'를 추가하여 리터럴 타입으로 명시
-        createdAt: new Date(),
-        suggestions: undefined,  // 선택적 필드 명시적으로 추가
-        sources: undefined,      // 선택적 필드 명시적으로 추가
-        focusMode: focusMode     // 현재 선택된 focusMode 저장
-      },
-    ]);
+    
+
+    // 검색 단계 업데이트를 위한 타이머 설정 (기존 코드 유지)
+  if (focusMode === 'pipelineSearch') {
+    // 0.5초 후에 start 단계를 completed로 변경하고 search 단계를 active로 변경
+    setTimeout(() => {
+      setSearchStepsMap(prev => {
+        const currentSteps = prev[messageId] || [];
+        if (currentSteps.length >= 2) {
+          return {
+            ...prev,
+            [messageId]: [
+              {
+                ...currentSteps[0],
+                status: 'completed'
+              },
+              {
+                ...currentSteps[1],
+                status: 'active'
+              }
+            ]
+          };
+        }
+        return prev;
+      });
+    }, 5000);
+  }
 
     const messageHandler = async (e: MessageEvent) => {
       const data = JSON.parse(e.data);

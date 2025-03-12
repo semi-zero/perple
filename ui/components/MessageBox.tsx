@@ -105,9 +105,18 @@ const MessageBox = ({
     <div className="w-full">
       {message.role === 'user' && (
         <div className={cn('w-full', messageIndex === 0 ? 'pt-16' : 'pt-8')}>
-          <h2 className="text-gray-900 dark:text-gray-100 font-semibold text-3xl lg:w-9/12 leading-tight">
-            {message.content}
-          </h2>
+          {messageFocusMode === 'writingAssistant' ? (
+            <div className="flex lg:w-9/12 justify-end">
+              <div className="bg-gray-100 text-gray-800 p-3 rounded-xl max-w-xl text-left 
+              prose leading-relaxed tracking-wide">
+                <p>{message.content}</p>
+              </div>
+            </div>
+          ) : (
+            <h2 className="text-gray-900 dark:text-gray-100 font-semibold text-3xl lg:w-9/12 leading-tight">
+              {message.content}
+            </h2>
+          )}
         </div>
       )}
 
@@ -115,7 +124,7 @@ const MessageBox = ({
         <div className="flex flex-col space-y-9 lg:space-y-0 lg:flex-row lg:justify-between lg:space-x-9">
           <div
             ref={dividerRef}
-            className="flex flex-col space-y-6 w-full lg:w-9/12"
+            className="flex flex-col space-y-6 w-full lg:w-9/12  flex-shrink-0"
           >
              {/* SearchSteps를 assistant 메시지 상단에 추가 */}
              {/* {isLast && loading && searchSteps && searchSteps.length > 0 && ( */}
@@ -243,19 +252,17 @@ const MessageBox = ({
             </div>
           </div>
 
-          <div className=" lg:top-0 flex flex-col items-center space-y-3 w-full lg:w-3/12 h-full pb-4">
-          <a href="https://www.naver.com" target="_blank" rel="noopener noreferrer">
+          <div className={cn(
+            "lg:top-0 flex flex-col items-center space-y-3 w-full lg:w-3/12 h-full pb-4",
+            messageFocusMode !== 'pipelineSearch' && "hidden"
+          )}>
+            <a href="https://www.naver.com" target="_blank" rel="noopener noreferrer">
               <img 
                 src="https://picsum.photos/400/200" 
                 alt="Random placeholder"
                 className="w-full h-[208px] object-cover rounded-lg cursor-pointer"
               />
             </a>
-            {/* check */}
-            {/* <SearchVideos
-              chatHistory={history.slice(0, messageIndex - 1)}
-              query={history[messageIndex - 1].content}
-            /> */}
           </div>
         </div>
       )}
