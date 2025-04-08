@@ -320,7 +320,7 @@ class MetaSearchAgent implements MetaSearchAgentType {
                     while (true) {
                       const { done, value } = await reader.read();
                       if (done) break;
-                      console.log('[AnsweringChain] FastAPI value:', value);
+                      // console.log('[AnsweringChain] FastAPI value:', value);
                       
                       const lines = value.split('\n').filter(line => line.trim());
                       for (const line of lines) {

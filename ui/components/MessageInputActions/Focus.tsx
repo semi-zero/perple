@@ -6,7 +6,8 @@ import {
   ScanEye,
   SwatchBook,
   Atom,
-  ChevronUp
+  ChevronUp,
+  BotMessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -29,7 +30,7 @@ export const focusModes = [
     key: 'writingAssistant',
     title: '글쓰기',
     description: '텍스트 생성 또는 채팅',
-    icon: <Pencil size={16} />,
+    icon: <BotMessageSquare size={16} />,
   },
   {
     key: 'pipelineSearch',

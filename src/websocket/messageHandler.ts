@@ -13,6 +13,7 @@ import MetaSearchAgent, {
 } from '../search/metaSearchAgent';
 import prompts from '../prompts';
 import type { InferModel } from 'drizzle-orm';
+import axios from 'axios';
 
 interface ExtraMessage {
   field1: string;
@@ -94,6 +95,7 @@ export const searchHandlers = {
   }),
 };
 
+
 const handleEmitterEvents = (
   emitter: EventEmitter,
   ws: WebSocket,
@@ -130,24 +132,39 @@ const handleEmitterEvents = (
   emitter.on('end', () => {
     ws.send(JSON.stringify({ type: 'messageEnd', messageId: messageId }));
     
-    type MessagesInsert = InferModel<typeof messagesSchema, 'insert'>;
+    
+    const newAssistantMessage = {
+      id: messageId,
+      content: recievedMessage,
+      chatId: chatId,
+      // createdBy: 'assistant',
+      role: 'assistant',
+      metadata: {
+        ...(sources && sources.length > 0 && { sources }),
+      },
+      focusMode: parsedWSMessage.focusMode,
+      optimizationMode: parsedWSMessage.optimizationMode,
+      extraMessages: parsedWSMessage.extraMessage 
+        ? [parsedWSMessage.extraMessage] 
+        : undefined,
+      feedbackLike: false,
+      feedbackDislike: false,
+      // isDeleted: false
+    };
 
-    db.insert(messagesSchema)
-      .values({
-        content: recievedMessage,
-        chatId: chatId,
-        messageId: messageId,
-        role: 'assistant',
-        metadata: {
-          createdAt: new Date(),
-          ...(sources && sources.length > 0 && { sources }),
-        },
-        focusMode: parsedWSMessage.focusMode,
-        optimizationMode: parsedWSMessage.optimizationMode,
-        extraMessage: parsedWSMessage.extraMessage,
-      } as MessagesInsert)
-      .execute();
+    
+    
+    try {
+      const createResponse = axios.post(
+        'http://172.22.16.1:3002/api/messages',
+        newAssistantMessage
+      );
+    } catch (error) {
+      throw new Error('Failed to create assistant message');
+    }
+    
   });
+
   emitter.on('error', (data) => {
     const parsedData = JSON.parse(data);
     ws.send(
@@ -206,6 +223,24 @@ export const handleMessage = async (
 
       if (handler) {
         try {
+          // const emitter = await handler.searchAndAnswer(
+          //   parsedMessage.content,
+          //   history,
+          //   llm,
+          //   embeddings,
+          //   parsedWSMessage.focusMode,
+          //   parsedWSMessage.optimizationMode,
+          //   parsedWSMessage.extraMessage,
+          //   parsedWSMessage.files,
+          // );
+
+          // handleEmitterEvents(emitter, 
+          //   ws, 
+          //   aiMessageId, 
+          //   parsedMessage.chatId,
+          //   parsedWSMessage);
+          
+
           const emitter = await handler.searchAndAnswer(
             parsedMessage.content,
             history,
@@ -222,56 +257,105 @@ export const handleMessage = async (
             aiMessageId, 
             parsedMessage.chatId,
             parsedWSMessage);
+          
+          // 1. 채팅 존재 여부 확인
+          try {
+            const response = await axios.get(`http://172.22.16.1:3002/api/chats/${parsedMessage.chatId}`);
 
-          const chat = await db.query.chats.findFirst({
-            where: eq(chats.id, parsedMessage.chatId),
-          });
-
-          type ChatsInsert = InferModel<typeof chats, 'insert'>;
-
-          if (!chat) {
-            await db
-              .insert(chats)
-              .values({
+            if (response.status === 200) {
+              console.log(`[Debug] Chat ${parsedMessage.chatId} exists`);
+              // return; // 정상 존재, 여기서 종료
+            } else {
+              // 200이 아닌 다른 성공 코드(204 등)면 에러를 던져서 catch에서 처리
+              throw { response: { status: response.status } };
+            }
+          } catch (error) {
+            if (axios.isAxiosError(error) && error.response?.status === 404 || error.response?.status === 204) {
+              // 2. 채팅 생성
+              console.log(`[Debug] Chat ${parsedMessage.chatId} created start`);
+              const newChat = {
                 id: parsedMessage.chatId,
-                title: parsedMessage.content.length > 12 ? parsedMessage.content.slice(0,12)+"...": parsedMessage.content,
-                createdAt: new Date().toString(),
+                title: parsedMessage.content.length > 12 
+                  ? parsedMessage.content.slice(0,12) + "..." 
+                  : parsedMessage.content,
+                createdBy: parsedMessage.userId || 'unknown',
+                userId: parsedMessage.userId || 'unknown',
                 focusMode: parsedWSMessage.focusMode,
                 optimizationMode: parsedWSMessage.optimizationMode,
-                extraMessage: parsedWSMessage.extraMessage,
-                files: parsedWSMessage.files.map(getFileDetails),
-                userId: parsedMessage.userId  // userId 추가 (필수 필드)
-              } as ChatsInsert)
-              .execute();
+                extraMessages: parsedWSMessage.extraMessage 
+                  ? [parsedWSMessage.extraMessage] 
+                  : undefined,
+                // fileEntities: parsedWSMessage.files.map(file => ({
+                //   fileId: file,
+                //   name: getFileDetails(file).name
+                // })),
+                // isDeleted: false
+              };
+              
+              const chatResponse = await axios.post('http://172.22.16.1:3002/api/chats', newChat);
+              console.log(`[Debug] Chat ${parsedMessage.chatId} created successfully, response:`, chatResponse.status);
+              
+              // 채팅 생성 후 잠시 대기 (DB 저장 시간 고려)
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            } else {
+              console.error('[Error] Failed to check chat existence:', error);
+              throw error;
+            }
           }
-
-          const messageExists = await db.query.messages.findFirst({
-            where: eq(messagesSchema.messageId, humanMessageId),
-          });
-
           
-          type MessagesInsert = InferModel<typeof messagesSchema, 'insert'>;
-          if (!messageExists) {
-            await db
-              .insert(messagesSchema)
-              .values({
+          // 3. 메시지 존재 여부 확인
+          try {
+            
+            const messageResponse = await axios.get(`http://172.22.16.1:3002/api/messages/${humanMessageId}`);
+
+            if (messageResponse.status === 200) {
+              console.log(`[Debug] Message ${humanMessageId} exists`);
+            
+              // 4. 기존 메시지 이후의 메시지들 삭제
+              try {
+                const deleteResponse = await axios.delete(
+                  `http://172.22.16.1:3002/api/messages`,
+                  { params: { chatId: parsedMessage.chatId, messageId: humanMessageId } }
+                );
+                console.log(`[Debug] Messages after ${humanMessageId} deleted successfully`);
+              } catch (deleteError) {
+                console.error('[Error] Failed to delete messages:', deleteError);
+                throw new Error('Failed to delete messages');
+              }
+            
+              // return; // 삭제 후 종료
+            }
+
+            // 204 등 다른 상태코드면 에러를 던져서 catch에서 처리
+            throw { response: { status: messageResponse.status } };
+            
+          } catch (error) {
+            if (axios.isAxiosError(error) && error.response?.status === 404 || error.response?.status === 204) {
+              // 5. 새 메시지 생성
+              const newMessage = {
+                id: humanMessageId,
                 content: parsedMessage.content,
                 chatId: parsedMessage.chatId,
-                messageId: humanMessageId,
+                // createdBy: parsedMessage.userId || 'unknown',
                 role: 'user',
-                metadata: {
-                  createdAt: new Date(),
-                },
+                metadata: {},
                 focusMode: parsedWSMessage.focusMode,
                 optimizationMode: parsedWSMessage.optimizationMode,
-                extraMessage: parsedWSMessage.extraMessage,
-              } as MessagesInsert)
-              .execute();
-          } else {
-            await db
-              .delete(messagesSchema)
-              .where(and(gt(messagesSchema.id, messageExists.id), eq(messagesSchema.chatId, parsedMessage.chatId)))
-              .execute();
+                extraMessages: parsedWSMessage.extraMessage 
+                  ? [parsedWSMessage.extraMessage] 
+                  : undefined,
+                feedbackLike: false,
+                feedbackDislike: false,
+                // isDeleted: false
+              };
+              
+              console.log(`[Debug] Creating message ${humanMessageId}`);
+              const createResponse = await axios.post('http://172.22.16.1:3002/api/messages', newMessage);
+              console.log(`[Debug] Message ${humanMessageId} created successfully, response:`, createResponse.status);
+            } else {
+              console.error('[Error] Failed to check message existence:', error);
+              throw error;
+            }
           }
         } catch (err) {
           console.log(err);

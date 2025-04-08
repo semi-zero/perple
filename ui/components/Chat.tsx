@@ -108,8 +108,9 @@ const Chat = ({
       {messages.map((msg, i) => {
         const isLast = i === messages.length - 1;
 
+        // 0327
         return (
-          <Fragment key={msg.messageId}>
+          <Fragment key={msg.id}>
             <MessageBox
               key={i}
               message={msg}
@@ -130,11 +131,16 @@ const Chat = ({
           </Fragment>
         );
       })}
-      {loading && !messageAppeared && <MessageBoxLoading />}
+      {loading && !messageAppeared && (
+          <MessageBoxLoading 
+            searchSteps={messages.length > 0 ? getSearchStepsForMessage(messages[messages.length - 1].id) : []}
+            focusMode={focusMode}
+          />
+        )}
       <div ref={messageEnd} className="h-0" />
       {dividerWidth > 0 && (
         <div
-          className="bottom-24 lg:bottom-10 fixed z-40"
+          className="bottom-24 lg:bottom-10 sticky z-40 w-9/12 flex-shrink-0"
           style={{ width: dividerWidth }}
         >
           <MessageInput

@@ -2,24 +2,68 @@
 
 import DeleteChat from '@/components/DeleteChat';
 import { cn, formatTimeDifference } from '@/lib/utils';
-import { BookOpenText, ClockIcon, Ellipsis, Plus, Menu } from 'lucide-react';
+import { BookOpenText, ClockIcon, Ellipsis, Plus, Menu, Archive, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { space } from 'postcss/lib/list';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
-export interface Chat {
-  id: string;
-  title: string;
-  createdAt: string;
-  focusMode: string;
+interface ExtraMessage {
+	field1?: string | null;
+    field2?: string | null;
+    field3?: string | null;
 }
 
-interface SpaceItem {
-  id: string;          // DB의 space.id
-  spaceName: string;   // DB의 space.spaceName
-  createdAt?: string;  // (있다면) 생성시간
-  updatedAt?: string;  // (있다면) 수정시간
+interface FileEntity {
+	name?: string | null;
+    fileId?: string | null;
+}
+// Space 인터페이스 추가
+interface Space {
+  id: string;
+  spaceName: string;
+  description: string | null;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string | null;
+  updatedBy: string | null;
+  isDeleted: boolean;
+}
+
+// User 인터페이스 추가
+interface User {
+  id: string;
+  name: string;
+  epId: string;
+  department: string;
+  email: string;
+  isAdmin: boolean;
+  createdAt: string;
+  lastActive: string;
+  groupName: string;
+  extraFields: {
+    location: string;
+    position: string;
+  };
+  isDeleted: boolean;
+}
+
+export interface Chat {
+	id: string;
+  title: string;
+  createdAt?: Date | null;
+  createdBy: string;
+  updatedAt?: Date | null;
+  updatedBy?: string;
+  description?: string | null;
+  focusMode?: string | null;
+  optimizationMode?: string | null;
+  extraMessages?: ExtraMessage[];
+  fileEntities?: FileEntity[];
+  space?: Space | null;  // Space 타입 추가
+  user?: User | null;    // User 타입 추가
+  isDeleted?: boolean;
 }
 
 const Page = () => {
@@ -28,40 +72,81 @@ const Page = () => {
   
   ////////////////////공간, 채팅 목록 관련 기능////////////////////
   const [chats, setChats] = useState<Chat[]>([]);
-  const [spaces, setSpaces] = useState<SpaceItem | null>(null);
+  const [spaces, setSpaces] = useState<Space | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { spaceId } = useParams(); // Next.js 13+ App Router 환경에서 사용
 
+  // useEffect(() => {
+  //   const fetchChats = async () => {
+  //     if (!spaceId) return; // spaceId가 없으면 API 호출 안 함
+  
+  //     setLoading(true);
+  //     try {
+  //       // console.log('Fetching chats for spaceId:', spaceId);
+  
+  //       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/spaces/${spaceId}`, {
+  //         method: 'GET',
+  //         headers: { 'Content-Type': 'application/json' },
+  //       });
+  
+  //       if (!res.ok) {
+  //         throw new Error(`Failed to fetch chats: ${res.status}`);
+  //       }
+  
+  //       const data = await res.json();
+  //       console.log('[useEffect] data:', data)
+  //       setChats(data.chats); // 응답에서 chats 데이터만 저장
+  //       setSpaces(data.space);
+  //     } catch (error) {
+  //       console.error('Error fetching chats:', error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  
+  //   fetchChats();
+  // }, [spaceId]); // spaceId가 변경될 때마다 실행
+
   useEffect(() => {
-    const fetchChats = async () => {
-      if (!spaceId) return; // spaceId가 없으면 API 호출 안 함
+    const fetchSpaceAndChats = async () => {
+      if (!spaceId) return;
   
       setLoading(true);
       try {
-        // console.log('Fetching chats for spaceId:', spaceId);
-  
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/spaces/${spaceId}`, {
+        // 1. 먼저 공간 정보를 가져옵니다
+        const spaceRes = await fetch(`http://localhost:3002/api/spaces/${spaceId}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });
   
-        if (!res.ok) {
-          throw new Error(`Failed to fetch chats: ${res.status}`);
+        if (!spaceRes.ok) {
+          throw new Error(`공간 정보를 가져오는데 실패했습니다: ${spaceRes.status}`);
         }
   
-        const data = await res.json();
-        console.log('[useEffect] data:', data)
-        setChats(data.chats); // 응답에서 chats 데이터만 저장
-        setSpaces(data.space);
+        const spaceData = await spaceRes.json();
+        setSpaces(spaceData);
+  
+        // 2. 그 다음 채팅 목록을 가져옵니다
+        const chatsRes = await fetch(`http://localhost:3002/api/spaces/${spaceId}/chats`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+  
+        if (!chatsRes.ok) {
+          throw new Error(`채팅 목록을 가져오는데 실패했습니다: ${chatsRes.status}`);
+        }
+  
+        const chatsData = await chatsRes.json();
+        setChats(chatsData.chatList || []);
       } catch (error) {
-        console.error('Error fetching chats:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
   
-    fetchChats();
-  }, [spaceId]); // spaceId가 변경될 때마다 실행
+    fetchSpaceAndChats();
+  }, [spaceId]);
 
   const filteredChats = chats.filter(chat => 
     chat.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -118,8 +203,15 @@ const Page = () => {
   const deleteChat = async () => {
     if (!deleteConfirmModal.chatId) return;
     try {
+      // const res = await fetch(
+      //   `${process.env.NEXT_PUBLIC_API_URL}/chats/${deleteConfirmModal.chatId}`,
+      //   {
+      //     method: 'DELETE',
+      //     headers: { 'Content-Type': 'application/json' },
+      //   }
+      // );
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/chats/${deleteConfirmModal.chatId}`,
+        `http://localhost:3002/api/chats/${deleteConfirmModal.chatId}`,
         {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -135,6 +227,77 @@ const Page = () => {
     }
   };
 
+  ///////////////////공간 액션 메뉴 관련 기능(채팅 공간에 저장, 채팅 공간에 제거)////////////////////
+  // 상태 추가
+  const [showSpaceModal, setShowSpaceModal] = useState<{
+    open: boolean;
+    chatId: string | null;
+  }>({ open: false, chatId: null });
+
+  const openSpaceSelectionModal = (chatId: string) => {
+    setShowSpaceModal({ open: true, chatId });
+    closeActionModal();
+  };
+
+  const closeSpaceSelectionModal = () => {
+    setShowSpaceModal({ open: false, chatId: null });
+  };
+
+  // 채팅을 공간에 추가하는 함수
+  const addChatToSpace = async (spaceId: string, chatId: string) => {
+    try {
+      console.log('[addChatToSpace] spaceId:', spaceId)
+      console.log('[addChatToSpace] chatId:', chatId)
+      // const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/spaces/${spaceId}/chats`, {
+      const response = await fetch(`http://localhost:3002/api/spaces/${spaceId}/chats`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([chatId]),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error('채팅을 공간에 추가하는데 실패했습니다.');
+      }
+      
+      toast.success('채팅이 공간에 추가되었습니다.');
+      closeActionModal(); // 성공 후 모달 닫기 추가
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '오류가 발생했습니다.');
+      console.error(error);
+    }
+  };
+
+  const handleRemoveFromSpace = async (chatId: string, spaceId: string) => {
+    try {
+      const response = await fetch(`http://localhost:3002/api/spaces/${spaceId}/chats/${chatId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('채팅을 공간에서 제거하는데 실패했습니다.');
+      }
+      
+      // 성공 시 상태 업데이트
+      setChats(prev => prev.map(chat => 
+        chat.id === chatId 
+          ? { ...chat, space: null }  // space 정보 제거
+          : chat
+      ));
+      
+      toast.success('채팅이 공간에서 제거되었습니다.');
+      closeActionModal();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '오류가 발생했습니다.');
+      console.error(error);
+    }
+  };
+  
 
   
   ////////////////////기타 기능////////////////////
@@ -177,9 +340,6 @@ const Page = () => {
           <Menu className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">스레드</h2>
         </div>
-        <button className="p-2 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">
-          <Plus className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-        </button>
       </div>
 
       {/* 채팅 리스트 */}
@@ -208,7 +368,7 @@ const Page = () => {
                     <div className="flex items-center space-x-2">
                       <ClockIcon size={16} />
                       <div className="p-0.5">
-                        {formatDateTime(chat.createdAt)}
+                        {formatDateTime(chat.createdAt?.toString() ?? '')}
                       </div>
                     </div>
                     <button
@@ -240,38 +400,36 @@ const Page = () => {
             left: `${actionModal.x - 32}px`,
           }}
         >
-          <h2 className="text-sm font-semibold mb-4">옵션</h2>
           <ul className="space-y-2 text-sm">
-            <li>
-              <button
-                className="w-full text-left px-1 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md"
-                onClick={closeActionModal}
+          <li>
+            <button
+                className="w-full text-left px-2 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-3"
+                onClick={() => {
+                  const chat = chats.find(c => c.id === actionModal.chatId);
+                  if (chat?.space) {
+                    // 공간에서 제거하는 함수 호출
+                    handleRemoveFromSpace(chat.id, chat.space.id);
+                  } else {
+                    // 공간에 추가하는 모달 표시
+                    openSpaceSelectionModal(chat!.id);
+                  }
+                }}
               >
-                공유하기
+                <Archive className="h-4 w-4 text-gray-500" />
+                <span className="text-sm">
+                  {chats.find(c => c.id === actionModal.chatId)?.space 
+                    ? '보관함에서 제거' 
+                    : '보관함에 저장'}
+                </span>
               </button>
             </li>
             <li>
               <button
-                className="w-full text-left px-1 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md"
-                onClick={closeActionModal}
-              >
-                이름 바꾸기
-              </button>
-            </li>
-            <li>
-              <button
-                className="w-full text-left px-1 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md"
-                onClick={closeActionModal}
-              >
-                아카이브에 보관
-              </button>
-            </li>
-            <li>
-              <button
-                className="w-full text-left px-1 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-red-600"
+                className="w-full text-left px-2 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-3 text-red-600"
                 onClick={() => openDeleteConfirmModal(actionModal.chatId!)}
               >
-                삭제
+                <Trash2 className="h-4 w-4 text-red-600" />
+                <span className="text-sm">삭제</span>
               </button>
             </li>
           </ul>

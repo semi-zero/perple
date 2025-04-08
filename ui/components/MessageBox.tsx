@@ -61,26 +61,27 @@ const MessageBox = ({
   const [parsedMessage, setParsedMessage] = useState(message.content);
   const [speechMessage, setSpeechMessage] = useState(message.content);
 
+  // 0327
   useEffect(() => {
     const regex = /\[(\d+)\]/g;
 
     if (
       message.role === 'assistant' &&
-      message?.sources &&
-      message.sources.length > 0
+      message?.metadata?.sources &&
+      message.metadata.sources.length > 0
     ) {
       return setParsedMessage(
         message.content.replace(
           regex,
           (_, number) =>
-            `<a href="${message.sources?.[number - 1]?.metadata?.url}" target="_blank" className="bg-light-secondary dark:bg-dark-secondary px-1 rounded ml-1 no-underline text-xs text-black/70 dark:text-white/70 relative">${number}</a>`,
+            `<a href="${message.metadata?.sources?.[number - 1]?.metadata?.url}" target="_blank" className="bg-light-secondary dark:bg-dark-secondary px-1 rounded ml-1 no-underline text-xs text-black/70 dark:text-white/70 relative">${number}</a>`,
         ),
       );
     }
 
     setSpeechMessage(message.content.replace(regex, ''));
     setParsedMessage(message.content);
-  }, [message.content, message.sources, message.role]);
+  }, [message.content, message.metadata?.sources, message.role]);
 
   const { speechStatus, start, stop } = useSpeech({ text: speechMessage });
 
@@ -126,16 +127,14 @@ const MessageBox = ({
             ref={dividerRef}
             className="flex flex-col space-y-6 w-full lg:w-9/12  flex-shrink-0"
           >
-             {/* SearchSteps를 assistant 메시지 상단에 추가 */}
-             {/* {isLast && loading && searchSteps && searchSteps.length > 0 && ( */}
-             {/* SearchSteps를 assistant 메시지 상단에 추가 */}
+            {/* 0327 */}
               {messageFocusMode === 'pipelineSearch' && (
                 <div>
-                  <SearchSteps steps={getSearchStepsForMessage(message.messageId)} />
+                  <SearchSteps steps={getSearchStepsForMessage(message.id)} />
                 </div>
               )}
-            
-            {message.sources && message.sources.length > 0 && (
+            {/* 0327 */}
+            {message.metadata?.sources && message.metadata.sources.length > 0 && (
               
               <div className="flex flex-col space-y-6">
                 
@@ -145,7 +144,8 @@ const MessageBox = ({
                     출처
                   </h3>
                 </div>
-                <MessageSources sources={message.sources} />
+                {/* 0327 */}
+                <MessageSources sources={message.metadata.sources} />
               </div>
             )}
             <div className="flex flex-col space-y-6">
@@ -184,10 +184,9 @@ const MessageBox = ({
               {loading && isLast ? null : (
                 <div className="flex flex-row items-center justify-between w-full text-gray-800 dark:text-gray-200 py-4 -mx-2">
                   <div className="flex flex-row items-center space-x-1">
-                    {/*  <button className="p-2 text-black/70 dark:text-white/70 rounded-xl hover:bg-light-secondary dark:hover:bg-dark-secondary transition duration-200 hover:text-black text-black dark:hover:text-white">
-                      <Share size={18} />
-                    </button> */}
-                    <Rewrite rewrite={rewrite} messageId={message.messageId} />
+                    
+                    {/* 0327 */}
+                    <Rewrite rewrite={rewrite} messageId={message.id} />
                   </div>
                   <div className="flex flex-row items-center space-x-1">
                     <Copy initialMessage={message.content} message={message} />
@@ -210,9 +209,10 @@ const MessageBox = ({
                   </div>
                 </div>
               )}
+              {/* 0327 */}
               {isLast &&
-                message.suggestions &&
-                message.suggestions.length > 0 &&
+                message.metadata?.suggestions &&
+                message.metadata.suggestions.length > 0 &&
                 message.role === 'assistant' &&
                 !loading && (
                   <>
@@ -223,7 +223,7 @@ const MessageBox = ({
                         <h3 className="text-lg font-semibold">관련 질문</h3>
                       </div>
                       <div className="flex flex-col space-y-3">
-                        {message.suggestions.map((suggestion, i) => (
+                        {message.metadata.suggestions.map((suggestion: string, i: number) => (
                           <div
                             className="flex flex-col space-y-3"
                             key={i}

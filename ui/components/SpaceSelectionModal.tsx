@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
 
 interface Space {
-  id: string;
+	id: string;
   spaceName: string;
+  description? : string | null;
+  createdAt?: Date | null;
+  createdBy?: string;
+  updatedAt?: Date | null;
+  updatedBy?: string;
+  isDeleted?: boolean;
 }
+
 
 interface SpaceSelectionModalProps {
   onClose: () => void;
@@ -15,17 +22,55 @@ export function SpaceSelectionModal({ onClose, onSelect, chatId }: SpaceSelectio
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // useEffect(() => {
+  //   const fetchSpaces = async () => {
+  //     try {
+  //       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/spaces`, {
+  //           method: 'GET',
+  //           headers: { 'Content-Type': 'application/json' },
+  //         });
+  //       const data = await res.json();
+  //       setSpaces(data.spaces);
+  //     } catch (error) {
+  //       console.error(error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchSpaces();
+  // }, []);
+
   useEffect(() => {
     const fetchSpaces = async () => {
+      const userId = 'user-1234'; // 현재 고정값으로 사용 중
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/spaces`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-          });
+        setLoading(true);
+        const res = await fetch(`http://localhost:3002/api/users/${userId}/spaces`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!res.ok) {
+          throw new Error(`API 요청 실패: ${res.status}`);
+        }
+
         const data = await res.json();
-        setSpaces(data.spaces);
+        console.log('[DEBUG] 전체 응답 데이터', data);
+        
+        const spaceUserList = data.spaceUserList || [];
+        const spaces = spaceUserList.map((item: { space: Space }) => item.space);
+        setSpaces(spaces);
+
+        if (spaces.length === 0) {
+          console.log('[DEBUG] 사용 가능한 공간이 없습니다.');
+        } else {
+          console.log('[DEBUG] 공간 목록:', spaces);
+        }
+
       } catch (error) {
-        console.error(error);
+        console.error('[ERROR] 공간 목록 조회 중 오류 발생:', error);
+        // 에러 상태 관리를 위한 state 추가 필요
+        setSpaces([]); // 에러 시 빈 배열로 설정
       } finally {
         setLoading(false);
       }

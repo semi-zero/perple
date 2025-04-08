@@ -15,22 +15,67 @@ import SearchSteps from '@/components/SearchSteps';
 import { OptimizationModes } from './MessageInputActions/Optimization';
 
 
-export type Message = {
-  messageId: string;
-  chatId: string;
-  createdAt: Date;
+// export type Message = {
+//   messageId: string;
+//   chatId: string;
+//   createdAt: Date;
+//   content: string;
+//   role: 'user' | 'assistant';
+//   suggestions?: string[];
+//   sources?: Document[];
+//   focusMode?: string; // focusMode 필드 추가
+//   optimizationMode?: string; // optimizationMode 필드 추가
+// };
+
+interface ExtraMessage {
+	field1?: string | null;
+    field2?: string | null;
+    field3?: string | null;
+}
+
+interface FileEntity {
+	name?: string | null;
+    fileId?: string | null;
+}
+
+export interface Message {
+	id: string;
   content: string;
-  role: 'user' | 'assistant';
-  suggestions?: string[];
-  sources?: Document[];
-  focusMode?: string; // focusMode 필드 추가
-  optimizationMode?: string; // optimizationMode 필드 추가
-};
+  createdAt?: Date | null;
+  createdBy: string;
+  updatedAt?: Date | null;
+  updatedBy?: string;
+  description?: string | null;
+  role: string;
+  metadata?: { [key: string]: any };
+  chatId: string;
+  focusMode?: string | null;
+  optimizationMode?: string | null;
+  extraMessages?: ExtraMessage[];
+  feedbackLike?: boolean | null;
+  feedbackDisLike?: boolean | null;
+  isDeleted?: boolean | null;
+}
+
 
 export interface File {
   fileName: string;
   fileExtension: string;
   fileId: string;
+}
+
+interface User {
+	id: string;
+  name: string;
+  epId?: string | null;
+  department: string;
+  email: string;
+  idAdmin?: boolean | null;
+  createdAt?: Date | null;
+  lastActive?: Date | null;
+  groupName?: string;
+  extraFields?: {[key: string]: any };
+  isDeleted?: boolean;
 }
 
 
@@ -278,8 +323,20 @@ const loadMessages = async (
   setSearchStepsMap: (map: Record<string, SearchStep[]>) => void, // 새로운 파라미터 추가
   setOptimizationMode: (mode: string) => void, // 새로운 파라미터 추가
 ) => {
+  // const res = await fetch(
+  //   `${process.env.NEXT_PUBLIC_API_URL}/chats/${chatId}`,
+  //   {
+  //     method: 'GET',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //   },
+  // );
+
+  // console.log('[ChatWindow load Messages DEBUG] res:', res.json());
+  
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/chats/${chatId}`,
+    `http://localhost:3002/api/chats/${chatId}/messages`,
     {
       method: 'GET',
       headers: {
@@ -288,23 +345,44 @@ const loadMessages = async (
     },
   );
 
+  // console.log('[ChatWindow load Messages DEBUG] res:', res.json());
+
   if (res.status === 404) {
     setNotFound(true);
     setIsMessagesLoaded(true);
     return;
   }
 
+  // const data = await res.json();
   const data = await res.json();
+  const rawMessages = data.messageList;
+  rawMessages.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-  const messages = data.messages.map((msg: any) => {
-    return {
-      ...msg,
-      metadata: msg.metadata || {},
-      sources: msg.metadata?.sources ?? [], // 메시지 타입의 sources 필드에 할당
-      focusMode: msg.focusMode, // 메시지에서 focusMode 가져오기
-      optimizationMode: msg.optimizationMode, // 메시지에서 optimizationMode 가져오기
-    } as Message;
-  });
+  if (!rawMessages || rawMessages.length === 0) {
+    setIsMessagesLoaded(true);
+    return;
+  }
+
+  // 공통 chat 정보는 첫 메시지 기준으로 가져옴
+  const commonChatData = rawMessages[0].chat;
+
+  // const messages = data.messages.map((msg: any) => {
+  //   return {
+  //     ...msg,
+  //     metadata: msg.metadata || {},
+  //     sources: msg.metadata?.sources ?? [], // 메시지 타입의 sources 필드에 할당
+  //     focusMode: msg.focusMode, // 메시지에서 focusMode 가져오기
+  //     optimizationMode: msg.optimizationMode, // 메시지에서 optimizationMode 가져오기
+  //   } as Message;
+  // });
+  const messages = rawMessages.map((msg: any) => ({
+    ...msg,
+    messageId: msg.id,
+    metadata: msg.metadata || {},
+    sources: msg.metadata?.sources ?? [],
+    focusMode: msg.focusMode,
+    optimizationMode: msg.optimizationMode,
+  })) as Message[];
 
   console.log('[DEBUG] messages:', messages);
   setMessages(messages);
@@ -323,12 +401,14 @@ const loadMessages = async (
       const assistantMessage = messages[i];
       
       // 각 메시지의 focusMode를 확인
-      const messageFocusMode = assistantMessage.focusMode || data.chat.focusMode;
-
+      // const messageFocusMode = assistantMessage.focusMode || data.chat.focusMode;
+      const messageFocusMode = assistantMessage.focusMode || commonChatData.focusMode;
+      
       // focusMode가 pipelineSearch인 메시지에 대해서만 처리
       if (messageFocusMode === 'pipelineSearch') {
         // 각 메시지의 optimizationMode를 사용
-        const messageOptimizationMode = assistantMessage.optimizationMode || data.chat.optimizationMode;
+        // const messageOptimizationMode = assistantMessage.optimizationMode || data.chat.optimizationMode;
+        const messageOptimizationMode = assistantMessage.optimizationMode || commonChatData.optimizationMode;
         const currentOptimizationMode = OptimizationModes.find(
           mode => mode.key === messageOptimizationMode
         );
@@ -336,7 +416,7 @@ const loadMessages = async (
           ? `${currentOptimizationMode.description}에서 검색`
           : '검색 중';
 
-        newSearchStepsMap[assistantMessage.messageId] = [
+        newSearchStepsMap[assistantMessage.id] = [
           {
             type: 'start',
             query: userMessage.content,
@@ -349,7 +429,7 @@ const loadMessages = async (
           },
           {
             type: 'processing',
-            sources: assistantMessage.sources?.map((source: Document) => {
+            sources: assistantMessage.metadata?.sources?.map((source: Document) => {
               if (source.metadata) {
                 return source.metadata.source || source.metadata.title || source.pageContent?.substring(0, 30) || '알 수 없는 소스';
               }
@@ -368,7 +448,7 @@ const loadMessages = async (
   
   setSearchStepsMap(newSearchStepsMap);
 
-  const history = messages.map((msg) => {
+  const history = messages.map((msg: Message) => {
     return [msg.role, msg.content];
   }) as [string, string][];
 
@@ -379,26 +459,38 @@ const loadMessages = async (
     document.title = messages[0].content;
   }
 
-  const files = data.chat.files.map((file: any) => {
-    return {
-      fileName: file.name,
-      fileExtension: file.name.split('.').pop(),
-      fileId: file.fileId,
-    };
-  });
+  // const files = data.chat.files.map((file: any) => {
+  //   return {
+  //     fileName: file.name,
+  //     fileExtension: file.name.split('.').pop(),
+  //     fileId: file.fileId,
+  //   };
+  // });
 
 
+  // setFiles(files);
+  // setFileIds(files.map((file: File) => file.fileId));
+  const files = commonChatData.fileEntities?.map((file: any) => ({
+    fileName: file.name,
+    fileExtension: file.name.split('.').pop(),
+    fileId: file.fileId,
+  })) ?? [];
+  
   setFiles(files);
   setFileIds(files.map((file: File) => file.fileId));
 
   setChatHistory(history);
   
   // 마지막 메시지의 focusMode를 우선적으로 사용하고, 없으면 채팅 전체의 focusMode 사용
-  if (messages.length > 0 && messages[messages.length - 1].focusMode) {
-    setFocusMode(messages[messages.length - 1].focusMode);
-  } else {
-    setFocusMode(data.chat.focusMode);
-  }
+  // if (messages.length > 0 && messages[messages.length - 1].focusMode) {
+  //   setFocusMode(messages[messages.length - 1].focusMode);
+  // } else {
+  //   setFocusMode(data.chat.focusMode);
+  // }
+  const lastMessage = messages[messages.length - 1];
+  setFocusMode(lastMessage.focusMode || commonChatData.focusMode);
+  setOptimizationMode(lastMessage.optimizationMode || commonChatData.optimizationMode || '');
+
   
   setIsMessagesLoaded(true);
 };
@@ -406,70 +498,80 @@ const loadMessages = async (
 const ChatWindow = ({ id }: { id?: string }) => {
   const searchParams = useSearchParams();
   const initialMessage = searchParams.get('q');
-
   const [chatId, setChatId] = useState<string | undefined>(id);
   const [newChatCreated, setNewChatCreated] = useState(false);
-
   const [hasError, setHasError] = useState(false);
   const [isReady, setIsReady] = useState(false);
-
   const [isWSReady, setIsWSReady] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [messageAppeared, setMessageAppeared] = useState(false);
+  const [chatHistory, setChatHistory] = useState<[string, string][]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileIds, setFileIds] = useState<string[]>([]);
+  const [focusMode, setFocusMode] = useState('writingAssistant');
+  const [optimizationMode, setOptimizationMode] = useState('rnd');
+  const [isMessagesLoaded, setIsMessagesLoaded] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const [extraMessage, setExtraMessage] = useState({
+    field1: '',
+    field2: '',
+    field3: '',
+  });
+  const [searchSteps, setSearchSteps] = useState<SearchStep[]>([]);
+  // 메시지 ID를 키로 사용하는 검색 단계 맵 상태 추가
+  const [searchStepsMap, setSearchStepsMap] = useState<Record<string, SearchStep[]>>({});
+  const [userData, setUserData] = useState<User | null>(null);
+
   const ws = useSocket(
     process.env.NEXT_PUBLIC_WS_URL!,
     setIsWSReady,
     setHasError,
   );
 
-  const [loading, setLoading] = useState(false);
-  const [messageAppeared, setMessageAppeared] = useState(false);
 
-  const [chatHistory, setChatHistory] = useState<[string, string][]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userId = 'user-1234'; // 또는 props나 다른 방식으로 받아온 ID
+        const response = await fetch(`http://localhost:3002/api/users/${userId}`);
+        
+        if (!response.ok) {
+          const errorMessage = `사용자 데이터를 불러오는데 실패했습니다 (Status: ${response.status})`;
+          // throw new Error(errorMessage);
+        }
 
-  const [files, setFiles] = useState<File[]>([]);
-  const [fileIds, setFileIds] = useState<string[]>([]);
+        const data = await response.json();
+        console.log('[DEBUG] API 응답 데이터:', data);
+        // API 응답의 날짜 문자열을 Date 객체로 변환
+        const formattedData: User = {
+          ...data,
+          createdAt: data.createdAt ? new Date(data.createdAt) : null,
+          lastActive: data.lastActive ? new Date(data.lastActive) : null
+        };
+        
+        setUserData(formattedData);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        // 에러 처리 - 필요한 경우 폴백 데이터 사용
+        setUserData({
+          id: "fallback-id",
+          name: "사용자",
+          department: "소속 없음",
+          email: "unknown@example.com",
+          isDeleted: false
+        });
+      }
+    };
 
-  const [focusMode, setFocusMode] = useState('writingAssistant');
-  const [optimizationMode, setOptimizationMode] = useState('');
+    fetchUserData();
+  }, []);
 
-  const [isMessagesLoaded, setIsMessagesLoaded] = useState(false);
-
-  const [notFound, setNotFound] = useState(false);
-
-  const [extraMessage, setExtraMessage] = useState({
-    field1: '',
-    field2: '',
-    field3: '',
-  });
-
-  // 더미 유저 데이터 추가
-  const dummyUserData = {
-    id: "550e8400-e29b-41d4-a716-446655440000",
-    name: "테스트 사용자",
-    department: "개발팀",
-    email: "test@example.com"
-  };
-
-  // 더미 검색 단계 데이터를 관리하기 위한 상태
-  // interface SearchStep {
-  //   type: 'search' | 'processing' | 'complete';
-  //   query?: string;
-  //   sources?: string[];
-  //   status: 'pending' | 'active' | 'completed';
-  // }
-
-  const [searchSteps, setSearchSteps] = useState<SearchStep[]>([]);
-  // 메시지 ID를 키로 사용하는 검색 단계 맵 상태 추가
-  const [searchStepsMap, setSearchStepsMap] = useState<Record<string, SearchStep[]>>({});
   
   const optimizationModeKey = OptimizationModes.find(mode => mode.key === optimizationMode);
-  console.log('[DEBUG] optimizationModeKey:', optimizationModeKey);
   const searchDescription = optimizationModeKey 
     ? `${optimizationModeKey.description}에서 검색`
     : '검색 중';
-
-  
-  
 
   useEffect(() => {
     console.log('[ChatWindow] 초기화 - chatId:', chatId);
@@ -567,17 +669,37 @@ const ChatWindow = ({ id }: { id?: string }) => {
 
     }
 
+    // setMessages((prevMessages) => [
+    //   ...prevMessages,
+    //   {
+    //     content: message,
+    //     messageId: messageId!,
+    //     chatId: chatId!,
+    //     role: 'user' as const,  // 'as const'를 추가하여 리터럴 타입으로 명시
+    //     createdAt: new Date(),
+    //     suggestions: undefined,  // 선택적 필드 명시적으로 추가
+    //     sources: undefined,      // 선택적 필드 명시적으로 추가
+    //     focusMode: focusMode     // 현재 선택된 focusMode 저장
+    //   },
+    // ]);
+
+    // 0327
     setMessages((prevMessages) => [
       ...prevMessages,
       {
+        id: messageId!,
         content: message,
-        messageId: messageId!,
         chatId: chatId!,
-        role: 'user' as const,  // 'as const'를 추가하여 리터럴 타입으로 명시
         createdAt: new Date(),
-        suggestions: undefined,  // 선택적 필드 명시적으로 추가
-        sources: undefined,      // 선택적 필드 명시적으로 추가
-        focusMode: focusMode     // 현재 선택된 focusMode 저장
+        createdBy: userData?.id || 'unknown',
+        role: 'user',
+        metadata: {
+          sources: undefined,
+          suggestions: undefined
+        },
+        focusMode: focusMode,
+        optimizationMode: optimizationMode,
+        isDeleted: false
       },
     ]);
 
@@ -588,7 +710,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
           messageId: messageId,
           chatId: chatId!,
           content: message,
-          userId: dummyUserData.id, // 더미 유저 ID 추가
+          userId: userData?.id, // 더미 유저 ID 추가
         },
         files: fileIds,
         focusMode: focusMode,
@@ -669,22 +791,45 @@ const ChatWindow = ({ id }: { id?: string }) => {
           }));
         }
 
-        if (!added) {
-          setMessages((prevMessages) => [
-            ...prevMessages,
-            {
-              content: '',
-              messageId: data.messageId,
-              chatId: chatId!,
-              role: 'assistant',
-              sources: sources,
-              createdAt: new Date(),
-              focusMode: focusMode  // 현재 선택된 focusMode 저장
+      //   if (!added) {
+      //     setMessages((prevMessages) => [
+      //       ...prevMessages,
+      //       {
+      //         content: '',
+      //         messageId: data.messageId,
+      //         chatId: chatId!,
+      //         role: 'assistant',
+      //         sources: sources,
+      //         createdAt: new Date(),
+      //         focusMode: focusMode  // 현재 선택된 focusMode 저장
+      //       },
+      //     ]);
+      //     added = true;
+      //   }
+      //   setMessageAppeared(true);
+      // }
+      // 0327
+      if (!added) {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: data.messageId,
+            content: '',
+            chatId: chatId!,
+            createdAt: new Date(),
+            createdBy: 'assistant',
+            role: 'assistant',
+            metadata: {
+              sources: sources
             },
-          ]);
-          added = true;
-        }
-        setMessageAppeared(true);
+            focusMode: focusMode,
+            optimizationMode: optimizationMode,
+            isDeleted: false
+          },
+        ]);
+        added = true;
+      }
+      setMessageAppeared(true);
       }
 
       if (data.type === 'message') {
@@ -721,25 +866,32 @@ const ChatWindow = ({ id }: { id?: string }) => {
           }));
         }
 
+        // 0327
         if (!added) {
           setMessages((prevMessages) => [
             ...prevMessages,
             {
+              id: data.messageId,
               content: data.data,
-              messageId: data.messageId,
               chatId: chatId!,
-              role: 'assistant',
-              sources: sources,
               createdAt: new Date(),
-              focusMode: focusMode  // 현재 선택된 focusMode 저장
+              createdBy: 'assistant',
+              role: 'assistant',
+              metadata: {
+                sources: sources
+              },
+              focusMode: focusMode,
+              optimizationMode: optimizationMode,
+              isDeleted: false
             },
           ]);
           added = true;
         }
 
+        // 0327
         setMessages((prev) =>
           prev.map((message) => {
-            if (message.messageId === data.messageId) {
+            if (message.id === data.messageId) {
               return { ...message, content: message.content + data.data };
             }
 
@@ -773,6 +925,7 @@ const ChatWindow = ({ id }: { id?: string }) => {
 
         ws?.removeEventListener('message', messageHandler);
         setLoading(false);
+        
 
         const lastMsg = messagesRef.current[messagesRef.current.length - 1];
 
@@ -804,10 +957,10 @@ const getSearchStepsForMessage = (messageId: string) => {
   return searchStepsMap[messageId] || [];
 };
 
-
+  // 0327
   const rewrite = (messageId: string) => {
     console.log('[ChatWindow] 메시지 재작성:', messageId);
-    const index = messages.findIndex((msg) => msg.messageId === messageId);
+    const index = messages.findIndex((msg) => msg.id === messageId);
 
     if (index === -1) return;
 
@@ -827,7 +980,8 @@ const getSearchStepsForMessage = (messageId: string) => {
       setFocusMode(messageFocusMode);
     }
 
-    sendMessage(message.content, message.messageId);
+    // 0327
+    sendMessage(message.content, message.id);
   };
 
   useEffect(() => {

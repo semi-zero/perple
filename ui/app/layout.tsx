@@ -31,6 +31,7 @@ export default function RootLayout({
       <UIProvider>  {/* 추가 */}
         <ThemeProvider>
           <Sidebar>{children}</Sidebar>
+          <div id="modal-root" />  {/* 모달을 위한 container 추가 */}
           <Toaster
             toastOptions={{
               unstyled: true,

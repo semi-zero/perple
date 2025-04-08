@@ -2,13 +2,16 @@
 
 import DeleteChat from '@/components/DeleteChat';
 import { cn, formatTimeDifference } from '@/lib/utils';
+import { CalendarIcon } from '@heroicons/react/24/outline';
 import { BookOpenText, 
   ClockIcon, 
   Ellipsis, 
   FolderKanban, 
   Plus, 
   Menu,
-  User } from 'lucide-react';
+  User,
+  Pencil,
+  Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -19,33 +22,82 @@ export interface Chat {
   focusMode: string;
 }
 
-interface SpaceItem {
-    id: string;          // DB의 space.id
-    spaceName: string;   // DB의 space.spaceName
-    createdAt?: string;  // (있다면) 생성시간
-    updatedAt?: string;  // (있다면) 수정시간
-  }
+// interface SpaceItem {
+//     id: string;          // DB의 space.id
+//     spaceName: string;   // DB의 space.spaceName
+//     createdAt?: string;  // (있다면) 생성시간
+//     updatedAt?: string;  // (있다면) 수정시간
+//   }
+interface Space {
+	id: string;
+    spaceName: string;
+    description? : string | null;
+    createdAt?: Date | null;
+    createdBy?: string;
+    updatedAt?: Date | null;
+    updatedBy?: string;
+    isDeleted?: boolean;
+}
 
 const Page = () => {
   const [loading, setLoading] = useState(true);
   // 에러 메시지 등을 담을 수 있는 상태
   const [error, setError] = useState('');
 
-  ////////////////////공간 목록 관련 기능////////////////////
-  const [spaces, setSpaces] = useState<SpaceItem[]>([]);
+  ////////////////////공간 목록(GET) 관련 기능////////////////////
+  const [spaces, setSpaces] = useState<Space[]>([]);
+  // useEffect(() => {
+  //   const fetchSpaces = async () => {
+  //     setLoading(true);
+  //     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/spaces`, {
+  //       method: 'GET',
+  //       headers: { 'Content-Type': 'application/json' },
+  //     });
+  //     const data = await res.json();
+  //     setSpaces(data.spaces);
+  //     console.log('[DEBUG] 공간 목록:', data.spaces);
+  //     setLoading(false);
+  //   };
+  //   fetchSpaces();
+  // }, []);
   useEffect(() => {
     const fetchSpaces = async () => {
-      setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/spaces`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const data = await res.json();
-      setSpaces(data.spaces);
-      setLoading(false);
+      const userId = 'user-1234'; // 현재 고정값으로 사용 중
+      try {
+        setLoading(true);
+        const res = await fetch(`http://localhost:3002/api/users/${userId}/spaces`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!res.ok) {
+          throw new Error(`API 요청 실패: ${res.status}`);
+        }
+
+        const data = await res.json();
+        console.log('[DEBUG] 전체 응답 데이터', data);
+        
+        const spaceUserList = data.spaceUserList || [];
+        const spaces = spaceUserList.map((item: { space: Space }) => item.space);
+        setSpaces(spaces);
+
+        if (spaces.length === 0) {
+          console.log('[DEBUG] 사용 가능한 공간이 없습니다.');
+        } else {
+          console.log('[DEBUG] 공간 목록:', spaces);
+        }
+
+      } catch (error) {
+        console.error('[ERROR] 공간 목록 조회 중 오류 발생:', error);
+        // 에러 상태 관리를 위한 state 추가 필요
+        setSpaces([]); // 에러 시 빈 배열로 설정
+      } finally {
+        setLoading(false);
+      }
     };
     fetchSpaces();
   }, []);
+  
 
 
 
@@ -55,7 +107,7 @@ const Page = () => {
 
   // 검색된 결과 필터링
   const filteredSpaces = spaces.filter((space) =>
-    space.spaceName.toLowerCase().includes(spaceSearchQuery.toLowerCase())
+    space?.spaceName?.toLowerCase().includes(spaceSearchQuery.toLowerCase())
   );
 
 
@@ -94,7 +146,7 @@ const Page = () => {
 
 
 
-  ////////////////////공간 생성 관련 기능////////////////////
+  ////////////////////공간 생성(POST) 관련 기능////////////////////
   // 새 스페이스 생성용
   const [newSpaceName, setNewSpaceName] = useState('');
   // 새 공간 생성 모달
@@ -113,37 +165,79 @@ const Page = () => {
   };
 
   // 스페이스 생성
+  // const handleCreateSpace = async () => {
+  //   if (!newSpaceName.trim()) {
+  //     alert('스페이스 이름을 입력하세요.');
+  //     return;
+  //   }
+
+  //   try {
+  //     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/spaces`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ spaceName: newSpaceName.trim() }),
+  //     });
+  //     if (!res.ok) {
+  //       throw new Error('Failed to create space');
+  //     }
+  //     const data = await res.json();
+  //     // 새 스페이스(단일 객체) 응답: { space: {...} } 라고 가정
+  //     const createdSpace = data.space;
+  //     // 리스트 갱신
+  //     setSpaces((prev) => [createdSpace, ...prev]);
+  //     setNewSpaceName('');
+  //     closeCreateSpaceModal();
+  //   } catch (err: any) {
+  //     console.error(err);
+  //     alert(`생성 실패: ${err.message}`);
+  //   }
+  // };
   const handleCreateSpace = async () => {
     if (!newSpaceName.trim()) {
       alert('스페이스 이름을 입력하세요.');
       return;
     }
-
+  
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/spaces`, {
+      // 임시 ID 생성 (UUID 형식 추천)
+      const tempId = `space-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      const spaceData = {
+        id: tempId,
+        userId: 'user-1234', // 실제 로그인된 사용자 ID로 대체 필요
+        spaceName: newSpaceName.trim()
+      };
+  
+      const res = await fetch(`http://localhost:3002/api/spaces`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ spaceName: newSpaceName.trim() }),
+        body: JSON.stringify(spaceData)
       });
+  
       if (!res.ok) {
-        throw new Error('Failed to create space');
+        throw new Error('스페이스 생성에 실패했습니다.');
       }
+  
       const data = await res.json();
-      // 새 스페이스(단일 객체) 응답: { space: {...} } 라고 가정
-      const createdSpace = data.space;
-      // 리스트 갱신
+      const createdSpace = data;
+      console.log('[DEBUG] 생성된 스페이스:', data);
+      console.log('[DEBUG] createdSpace:', createdSpace);
+      
       setSpaces((prev) => [createdSpace, ...prev]);
       setNewSpaceName('');
       closeCreateSpaceModal();
+      
+      console.log('[DEBUG] 새로운 스페이스가 생성되었습니다:', createdSpace);
     } catch (err: any) {
-      console.error(err);
+      console.error('[ERROR] 스페이스 생성 중 오류 발생:', err);
       alert(`생성 실패: ${err.message}`);
     }
   };
 
 
 
-  ////////////////////공간 삭제 관련 기능////////////////////
+
+  ////////////////////공간 삭제(DELETE) 관련 기능////////////////////
   // 삭제 확인 모달
   const [deleteSpaceConfirmModal, setDeleteSpaceConfirmModal] = useState<{
     open: boolean;
@@ -161,11 +255,30 @@ const Page = () => {
   };
 
   // 공간 삭제
+  // const deleteSpace = async () => {
+  //   if (!deleteSpaceConfirmModal.spaceId) return;
+  //   try {
+  //     const res = await fetch(
+  //       `${process.env.NEXT_PUBLIC_API_URL}/spaces/${deleteSpaceConfirmModal.spaceId}`,
+  //       {
+  //         method: 'DELETE',
+  //         headers: { 'Content-Type': 'application/json' },
+  //       }
+  //     );
+  //     if (!res.ok) throw new Error('Failed to delete chat');
+
+  //     // 성공 후 state에서 해당 항목 제거
+  //     setSpaces((prev) => prev.filter((space) => space.id !== deleteSpaceConfirmModal.spaceId));
+  //     closeDeleteSpaceConfirmModal();
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
   const deleteSpace = async () => {
     if (!deleteSpaceConfirmModal.spaceId) return;
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/spaces/${deleteSpaceConfirmModal.spaceId}`,
+        `http://localhost:3002/api/spaces/${deleteSpaceConfirmModal.spaceId}`,
         {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -180,6 +293,74 @@ const Page = () => {
       console.error(error);
     }
   };
+
+  ////////////////////공간 수정(PUT) 관련 기능(모달)////////////////////
+  // 수정 스페이스 생성용
+  const [updateSpaceName, setUpdateSpaceName] = useState('');
+
+  // 공간 수정 모달
+  const [updateSpaceModal, setUpdateSpaceModal] = useState<{
+    open: boolean;
+    spaceId?: string;
+    currentSpaceName?: string;
+  }>({ open: false });
+
+  //공간 수정 모달 열기
+  const openUpdateSpaceModal = (spaceId: string) => {
+
+    const currentSpace = spaces.find((space) => space.id === spaceId);
+    
+    if (currentSpace) {
+      setUpdateSpaceModal({ 
+        open: true, 
+        spaceId: spaceId, 
+        currentSpaceName: currentSpace?.spaceName });
+      setUpdateSpaceName(currentSpace?.spaceName || '');
+    }
+    closeSpaceActionModal();
+  };
+  // 공간 수정 모달 닫기  
+  const closeUpdateSpaceModal = () => {
+    setUpdateSpaceModal({ open: false });
+    setUpdateSpaceName('');
+  };
+
+
+  // 공간 수정
+  const handleUpdateSpace = async () => {
+    if (!updateSpaceModal.spaceId) return;
+
+    try {
+      const updateSpaceData = {
+        id: updateSpaceModal.spaceId,
+        userId: 'user-1234',
+        spaceName: updateSpaceName.trim(),
+        isDeleted: false
+      };
+
+      const res = await fetch(
+        `http://localhost:3002/api/spaces`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateSpaceData),
+        }
+      );
+      if (!res.ok) throw new Error('Failed to update space');
+
+       // 성공 후 state에서 해당 항목 업데이트
+      setSpaces((prev) => prev.map((space) => 
+        space.id === updateSpaceModal.spaceId 
+          ? { ...space, spaceName: updateSpaceName.trim() }
+          : space
+      ));
+      closeUpdateSpaceModal();
+    } catch (error) {
+      console.error(error);
+      alert('공간 수정에 실패했습니다.');
+    }
+  };
+
 
 
 
@@ -237,6 +418,21 @@ const Page = () => {
           </div>
         ) : (
           <div className="mt-4 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
+           {/* 공간 생성 카드 */}
+            <div
+              className="relative p-6 rounded-xl shadow-md bg-white dark:bg-gray-900 transition-all hover:shadow-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+              onClick={openCreateSpaceModal}
+            >
+              <div className="h-full flex flex-col items-start justify-start text-left gap-4">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">새 공간 만들기</h3>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                  <Plus className="h-6 w-6 text-blue-500 dark:text-blue-400" />
+                </div>
+              </div>
+            </div>
+
             {filteredSpaces.length === 0 ? (
               <p className="text-center text-gray-500 dark:text-gray-400">스레드가 없습니다.</p>
             ) : (
@@ -257,10 +453,10 @@ const Page = () => {
                   </Link>
                   <div className="flex items-center justify-between mt-8 text-gray-500 text-sm">
                     <div className="flex items-center space-x-2">
-                      {/* <ClockIcon size={16} />
-                      <div className="p-0.5">
-                        {formatDateTime(chat.createdAt)}
-                      </div> */}
+                      <CalendarIcon className="h-4 w-4" />
+                      <span className="text-gray-500 dark:text-gray-400">
+                        {formatDateTime(space.createdAt?.toString() || '')}
+                      </span>
                     </div>
                     <button
                       className="p-1 cursor-pointer  rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 
@@ -288,30 +484,23 @@ const Page = () => {
             left: `${spaceActionModal.x - 32}px`,
           }}
         >
-          <h2 className="text-sm font-semibold mb-4">옵션</h2>
           <ul className="space-y-2 text-sm">
             <li>
               <button
-                className="w-full text-left px-1 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md"
-                onClick={closeSpaceActionModal}
+                className="w-full text-left px-1 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md flex items-center gap-3"
+                onClick={() => openUpdateSpaceModal(spaceActionModal.spaceId!)}
               >
-                공유하기
+              <Pencil className="h-4 w-4 text-gray-500" />
+              <span className="text-sm">이름 바꾸기</span>
               </button>
             </li>
             <li>
               <button
-                className="w-full text-left px-1 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md"
-                onClick={closeSpaceActionModal}
-              >
-                수정하기
-              </button>
-            </li>
-            <li>
-              <button
-                className="w-full text-left px-1 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-red-600"
+                className="w-full text-left px-1 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-red-600 flex items-center gap-3"
                 onClick={() => openDeleteSpaceConfirmModal(spaceActionModal.spaceId!)}
               >
-                삭제
+              <Trash2 className="h-4 w-4 text-red-600" />
+              <span className="text-sm">삭제</span>
               </button>
             </li>
           </ul>
@@ -384,6 +573,43 @@ const Page = () => {
           </div>
         </div>
       )}
+
+      {/* ------------ 공간 수정 모달 ------------ */}
+      {updateSpaceModal.open && (
+        <div className="fixed z-[80] inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-dark-primary p-4 rounded-lg shadow-lg w-full max-w-sm">
+            {/* 모달 제목 */}
+            
+            <h2 className="text-base font-semibold">
+              공간을 수정하시겠습니까?
+            </h2>
+            <input
+              type="text"
+              value={updateSpaceName}
+              onChange={(e) => setUpdateSpaceName(e.target.value)}
+              className="w-full mt-4 p-2 border rounded-lg mb-4"
+              placeholder="공간 이름"
+            />
+            {/* 하단 버튼 영역 */}
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                className="px-4 py-2 bg-white-200 dark:bg-gray-700 rounded-2xl text-sm border border-light-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                onClick={closeUpdateSpaceModal}
+              >
+                취소
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-500 text-white rounded-2xl text-sm hover:bg-blue-600"
+                onClick={handleUpdateSpace}
+              >
+                수정
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
     </div>
   );
 };
