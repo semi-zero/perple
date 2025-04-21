@@ -17,7 +17,7 @@ const MessageBoxLoading = ({
   focusMode?: string
 }) => {
   return (
-    <div className="flex flex-col space-y-6 w-full lg:w-9/12">
+    <div className="flex flex-col space-y-6 w-full">
       {/* 검색 모드일 때만 검색 단계 표시 */}
       {focusMode === 'pipelineSearch' && searchSteps && searchSteps.length > 0 && (
         <div className="mb-4">

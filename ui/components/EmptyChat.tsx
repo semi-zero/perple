@@ -50,7 +50,7 @@ const EmptyChat = ({
       </div>
       <div className="flex flex-col items-center justify-center h-screen max-w-screen-md mx-auto p-2 space-y-8">
         <h2 className="text-black dark:text-white/70 text-3xl font-semibold -mt-24">
-          SDI R&D AI Assistant
+          SAMSUNG SDI R&D AI Assistant
         </h2>
         <EmptyChatMessageInput
           sendMessage={sendMessage}

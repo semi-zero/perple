@@ -26,11 +26,12 @@ type Message = {
   chatId: string;
   content: string;
   userId: string;
+  description: string;
 };
 
 type WSMessage = {
   message: Message;
-  type: string;
+  type: string;  // 'message' | 'rewrite'
   focusMode: string;
   optimizationMode: string;
   extraMessage: ExtraMessage;
@@ -129,15 +130,48 @@ const handleEmitterEvents = (
     }
   });
   
+  // emitter.on('end', () => {
+  //   ws.send(JSON.stringify({ type: 'messageEnd', messageId: messageId }));
+    
+    
+  //   const newAssistantMessage = {
+  //     id: messageId,
+  //     content: recievedMessage,
+  //     chatId: chatId,
+  //     // createdBy: 'assistant',
+  //     role: 'assistant',
+  //     metadata: {
+  //       ...(sources && sources.length > 0 && { sources }),
+  //     },
+  //     focusMode: parsedWSMessage.focusMode,
+  //     optimizationMode: parsedWSMessage.optimizationMode,
+  //     extraMessages: parsedWSMessage.extraMessage 
+  //       ? [parsedWSMessage.extraMessage] 
+  //       : undefined,
+  //     feedbackLike: false,
+  //     feedbackDislike: false,
+  //     // isDeleted: false
+  //   };
+
+    
+    
+  //   try {
+  //     const createResponse = axios.post(
+  //       'http://172.22.16.1:3002/api/messages',
+  //       newAssistantMessage
+  //     );
+  //   } catch (error) {
+  //     throw new Error('Failed to create assistant message');
+  //   }
+    
+  // });
   emitter.on('end', () => {
     ws.send(JSON.stringify({ type: 'messageEnd', messageId: messageId }));
-    
     
     const newAssistantMessage = {
       id: messageId,
       content: recievedMessage,
       chatId: chatId,
-      // createdBy: 'assistant',
       role: 'assistant',
       metadata: {
         ...(sources && sources.length > 0 && { sources }),
@@ -149,10 +183,8 @@ const handleEmitterEvents = (
         : undefined,
       feedbackLike: false,
       feedbackDislike: false,
-      // isDeleted: false
+      description: parsedWSMessage.message.messageId // user의 메시지 ID 저장
     };
-
-    
     
     try {
       const createResponse = axios.post(
@@ -162,7 +194,6 @@ const handleEmitterEvents = (
     } catch (error) {
       throw new Error('Failed to create assistant message');
     }
-    
   });
 
   emitter.on('error', (data) => {
@@ -217,30 +248,14 @@ export const handleMessage = async (
       }
     });
 
-    if (parsedWSMessage.type === 'message') {
-      const handler: MetaSearchAgentType =
-        searchHandlers[parsedWSMessage.focusMode];
-
+    if (parsedWSMessage.type === 'rewrite') {
+      const handler: MetaSearchAgentType = searchHandlers[parsedWSMessage.focusMode];
+      
       if (handler) {
         try {
-          // const emitter = await handler.searchAndAnswer(
-          //   parsedMessage.content,
-          //   history,
-          //   llm,
-          //   embeddings,
-          //   parsedWSMessage.focusMode,
-          //   parsedWSMessage.optimizationMode,
-          //   parsedWSMessage.extraMessage,
-          //   parsedWSMessage.files,
-          // );
-
-          // handleEmitterEvents(emitter, 
-          //   ws, 
-          //   aiMessageId, 
-          //   parsedMessage.chatId,
-          //   parsedWSMessage);
+          console.log('[Debug] Rewrite 시작:', parsedWSMessage);
           
-
+          // 1. 새로운 AI 응답 생성
           const emitter = await handler.searchAndAnswer(
             parsedMessage.content,
             history,
@@ -252,21 +267,109 @@ export const handleMessage = async (
             parsedWSMessage.files,
           );
 
-          handleEmitterEvents(emitter, 
-            ws, 
-            aiMessageId, 
-            parsedMessage.chatId,
-            parsedWSMessage);
-          
+          // 2. handleEmitterEvents 수정하여 응답을 받은 후 메시지 업데이트
+          let recievedMessage = '';
+          let sources = [];
+
+          emitter.on('data', (data) => {
+            const parsedData = JSON.parse(data);
+            if (parsedData.type === 'response') {
+              ws.send(
+                JSON.stringify({
+                  type: 'message',
+                  data: parsedData.data,
+                  messageId: parsedMessage.messageId,
+                }),
+              );
+              recievedMessage += parsedData.data;
+            } else if (parsedData.type === 'sources') {
+              sources = parsedData.data;
+              ws.send(
+                JSON.stringify({
+                  type: 'sources',
+                  data: parsedData.data,
+                  messageId: parsedMessage.messageId,
+                }),
+              );
+            }
+          });
+
+          emitter.on('end', async () => {
+            ws.send(JSON.stringify({ type: 'messageEnd', messageId: parsedMessage.messageId }));
+            
+            // 응답이 모두 수신된 후 메시지 업데이트
+            const updateMessage = {
+              id: parsedMessage.messageId,
+              content: recievedMessage,
+              chatId: parsedMessage.chatId,
+              createdBy: parsedMessage.userId || 'unknown',
+              role: 'assistant',
+              metadata: {
+                ...(sources && sources.length > 0 && { sources }),
+              },
+              focusMode: parsedWSMessage.focusMode,
+              optimizationMode: parsedWSMessage.optimizationMode,
+              extraMessages: parsedWSMessage.extraMessage 
+                ? [parsedWSMessage.extraMessage] 
+                : undefined,
+              description: parsedWSMessage.message.description, // user의 원래 메시지 ID를 참조하도록 수정
+              feedbackLike: false,
+              feedbackDislike: false
+            };
+
+            try {
+              await axios.put(
+                `http://172.22.16.1:3002/api/messages/${parsedMessage.messageId}`,
+                updateMessage
+              );
+              console.log(`[Debug] Message ${parsedMessage.messageId} updated successfully`);
+            } catch (error) {
+              console.error('[Error] Failed to update message:', error);
+              ws.send(
+                JSON.stringify({
+                  type: 'error',
+                  data: 'Failed to update message',
+                  key: 'UPDATE_ERROR',
+                })
+              );
+            }
+          });
+
+          emitter.on('error', (data) => {
+            const parsedData = JSON.parse(data);
+            ws.send(
+              JSON.stringify({
+                type: 'error',
+                data: parsedData.data,
+                key: 'CHAIN_ERROR',
+              }),
+            );
+          });
+
+        } catch (err) {
+          console.error('[Error] Rewrite failed:', err);
+          ws.send(
+            JSON.stringify({
+              type: 'error',
+              data: 'Failed to rewrite message',
+              key: 'REWRITE_ERROR',
+            })
+          );
+        }
+      }
+    } else if (parsedWSMessage.type === 'message') {
+      const handler: MetaSearchAgentType =
+        searchHandlers[parsedWSMessage.focusMode];
+
+      if (handler) {
+        try {
           // 1. 채팅 존재 여부 확인
           try {
             const response = await axios.get(`http://172.22.16.1:3002/api/chats/${parsedMessage.chatId}`);
 
             if (response.status === 200) {
               console.log(`[Debug] Chat ${parsedMessage.chatId} exists`);
-              // return; // 정상 존재, 여기서 종료
             } else {
-              // 200이 아닌 다른 성공 코드(204 등)면 에러를 던져서 catch에서 처리
               throw { response: { status: response.status } };
             }
           } catch (error) {
@@ -285,11 +388,6 @@ export const handleMessage = async (
                 extraMessages: parsedWSMessage.extraMessage 
                   ? [parsedWSMessage.extraMessage] 
                   : undefined,
-                // fileEntities: parsedWSMessage.files.map(file => ({
-                //   fileId: file,
-                //   name: getFileDetails(file).name
-                // })),
-                // isDeleted: false
               };
               
               const chatResponse = await axios.post('http://172.22.16.1:3002/api/chats', newChat);
@@ -303,13 +401,14 @@ export const handleMessage = async (
             }
           }
           
-          // 3. 메시지 존재 여부 확인
+          // 3. 메시지 존재 여부 확인 및 유저 메시지 먼저 저장
+          let userMessageSaved = false;
           try {
-            
             const messageResponse = await axios.get(`http://172.22.16.1:3002/api/messages/${humanMessageId}`);
 
             if (messageResponse.status === 200) {
               console.log(`[Debug] Message ${humanMessageId} exists`);
+              userMessageSaved = true;
             
               // 4. 기존 메시지 이후의 메시지들 삭제
               try {
@@ -322,11 +421,8 @@ export const handleMessage = async (
                 console.error('[Error] Failed to delete messages:', deleteError);
                 throw new Error('Failed to delete messages');
               }
-            
-              // return; // 삭제 후 종료
             }
 
-            // 204 등 다른 상태코드면 에러를 던져서 catch에서 처리
             throw { response: { status: messageResponse.status } };
             
           } catch (error) {
@@ -336,7 +432,6 @@ export const handleMessage = async (
                 id: humanMessageId,
                 content: parsedMessage.content,
                 chatId: parsedMessage.chatId,
-                // createdBy: parsedMessage.userId || 'unknown',
                 role: 'user',
                 metadata: {},
                 focusMode: parsedWSMessage.focusMode,
@@ -346,16 +441,37 @@ export const handleMessage = async (
                   : undefined,
                 feedbackLike: false,
                 feedbackDislike: false,
-                // isDeleted: false
               };
               
               console.log(`[Debug] Creating message ${humanMessageId}`);
               const createResponse = await axios.post('http://172.22.16.1:3002/api/messages', newMessage);
               console.log(`[Debug] Message ${humanMessageId} created successfully, response:`, createResponse.status);
-            } else {
+              userMessageSaved = true;
+            } else if (!userMessageSaved) {
               console.error('[Error] Failed to check message existence:', error);
               throw error;
             }
+          }
+
+          // 유저 메시지가 저장된 후에만 AI 응답 생성 시작
+          if (userMessageSaved) {
+            const emitter = await handler.searchAndAnswer(
+              parsedMessage.content,
+              history,
+              llm,
+              embeddings,
+              parsedWSMessage.focusMode,
+              parsedWSMessage.optimizationMode,
+              parsedWSMessage.extraMessage,
+              parsedWSMessage.files,
+            );
+
+            // AI 응답 처리 함수 수정
+            handleEmitterEvents(emitter, 
+              ws, 
+              aiMessageId, 
+              parsedMessage.chatId,
+              parsedWSMessage);
           }
         } catch (err) {
           console.log(err);

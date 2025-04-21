@@ -7,6 +7,7 @@ import MessageBox from './MessageBox';
 import MessageBoxLoading from './MessageBoxLoading';
 
 import SearchSteps from '@/components/SearchSteps';
+import CustomCard from '@/components/common/CustomCard';
 
 // 더미 검색 단계 데이터를 관리하기 위한 상태
 interface SearchStep {
@@ -26,6 +27,7 @@ interface ExtraMessage {
 interface ChatProps {
   loading: boolean;
   messages: Message[];
+  setMessages: (messages: Message[]) => void;
   sendMessage: (message: string) => void;
   messageAppeared: boolean;
   rewrite: (messageId: string) => void;
@@ -41,6 +43,7 @@ interface ChatProps {
 const Chat = ({
   loading,
   messages,
+  setMessages,
   sendMessage,
   messageAppeared,
   rewrite,
@@ -58,6 +61,7 @@ const Chat = ({
   setExtraMessage
 }: {
   messages: Message[];
+  setMessages: (messages: Message[]) => void;
   sendMessage: (message: string) => void;
   loading: boolean;
   messageAppeared: boolean;
@@ -104,60 +108,69 @@ const Chat = ({
   }, [messages]);
 
   return (
-    <div className="flex flex-col space-y-6 pt-8 pb-44 lg:pb-32 sm:mx-4 md:mx-8 mb-12">
-      {messages.map((msg, i) => {
-        const isLast = i === messages.length - 1;
+    <div className="flex flex-col relative min-h-screen max-w-6xl mx-auto">
+      <div className="flex flex-col space-y-6 pt-6 pb-40">
+        
+        {messages.map((msg, i) => {
+          const isLast = i === messages.length - 1;
 
-        // 0327
-        return (
-          <Fragment key={msg.id}>
-            <MessageBox
-              key={i}
-              message={msg}
-              messageIndex={i}
-              history={messages}
-              loading={loading}
-              dividerRef={isLast ? dividerRef : undefined}
-              isLast={isLast}
-              rewrite={rewrite}
-              sendMessage={sendMessage}
+          // 0327
+          return (
+            
+            <Fragment key={msg.id}>
+              
+                <MessageBox
+                  key={i}
+                  message={msg}
+                  messageIndex={i}
+                  messages={messages}
+                  setMessages={setMessages}
+                  loading={loading}
+                  dividerRef={isLast ? dividerRef : undefined}
+                  isLast={isLast}
+                  rewrite={rewrite}
+                  sendMessage={sendMessage}
+                  focusMode={focusMode}
+                  searchStepsMap={searchStepsMap}
+                  getSearchStepsForMessage={getSearchStepsForMessage}
+                />
+              
+              {!isLast && msg.role === 'assistant' && (
+                <div className="h-px w-full bg-light-secondary dark:bg-dark-secondary" />
+              )}
+            </Fragment>
+            
+          );
+        })}
+        {loading && !messageAppeared && (
+            <MessageBoxLoading 
+              searchSteps={messages.length > 0 ? getSearchStepsForMessage(messages[messages.length - 1].id) : []}
               focusMode={focusMode}
-              searchStepsMap={searchStepsMap} 
-              getSearchStepsForMessage={getSearchStepsForMessage}
             />
-            {!isLast && msg.role === 'assistant' && (
-              <div className="h-px w-full bg-light-secondary dark:bg-dark-secondary" />
-            )}
-          </Fragment>
-        );
-      })}
-      {loading && !messageAppeared && (
-          <MessageBoxLoading 
-            searchSteps={messages.length > 0 ? getSearchStepsForMessage(messages[messages.length - 1].id) : []}
-            focusMode={focusMode}
-          />
-        )}
-      <div ref={messageEnd} className="h-0" />
+          )}
+        <div ref={messageEnd} className="h-0" />
+      </div>
+      
       {dividerWidth > 0 && (
-        <div
-          className="bottom-24 lg:bottom-10 sticky z-40 w-9/12 flex-shrink-0"
-          style={{ width: dividerWidth }}
-        >
-          <MessageInput
-            loading={loading}
-            sendMessage={sendMessage}
-            fileIds={fileIds}
-            setFileIds={setFileIds}
-            files={files}
-            setFiles={setFiles}
-            focusMode={focusMode}
-            setFocusMode={setFocusMode}
-            optimizationMode={optimizationMode}
-            setOptimizationMode={setOptimizationMode}
-            extraMessage={extraMessage}
-            setExtraMessage={setExtraMessage}
-          />
-        </div>
+      <div 
+        className="fixed bottom-0 pb-4 bg-gradient-to-t from-white dark:from-dark-800"
+        style={{width: dividerWidth}}
+      >
+        <MessageInput
+          loading={loading}
+          sendMessage={sendMessage}
+          fileIds={fileIds}
+          setFileIds={setFileIds}
+          files={files}
+          setFiles={setFiles}
+          focusMode={focusMode}
+          setFocusMode={setFocusMode}
+          optimizationMode={optimizationMode}
+          setOptimizationMode={setOptimizationMode}
+          extraMessage={extraMessage}
+          setExtraMessage={setExtraMessage}
+        />
+      </div>
       )}
     </div>
   );

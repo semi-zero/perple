@@ -83,7 +83,7 @@ const Focus = ({
     <Popover className="relative w-full">
       <PopoverButton
         type="button"
-        className="text-blue-500 dark:text-white bg-white dark:bg-dark-800 rounded-2xl p-2 border border-light-200 dark:border-dark-200 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition duration-200"
+        className="text-brand-500 dark:text-white bg-white dark:bg-dark-800 rounded-2xl p-2 border border-light-200 dark:border-dark-200 hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-95 transition duration-200"
       >
         {focusMode !== 'webSearch' ? (
           <div className="flex flex-row items-center space-x-1">
@@ -119,10 +119,10 @@ const Focus = ({
                 onClick={() => setFocusMode(mode.key)}
                 key={i}
                 className={cn(
-                  'p-2 rounded-lg flex flex-col items-start justify-start text-start space-y-2 hover:bg-gray-200 dark:hover:bg-gray-700 duration-200 cursor-pointer transition',
+                  'p-2 rounded-lg flex flex-col items-start justify-start text-start space-y-2 hover:bg-gray-100 dark:hover:bg-gray-700 duration-200 cursor-pointer transition',
                   focusMode === mode.key
-                  ? 'bg-gray-200 dark:bg-gray-700 text-blue-500 dark:text-black'
-                  : 'hover:bg-gray-200 dark:hover:bg-gray-700',
+                  ? 'bg-gray-100 dark:bg-gray-700 text-brand-500 dark:text-black'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700',
                 )}
               >
                 <div

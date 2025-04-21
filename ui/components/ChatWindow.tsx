@@ -7,25 +7,13 @@ import Chat from './Chat';
 import EmptyChat from './EmptyChat';
 import crypto from 'crypto';
 import { toast } from 'sonner';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getSuggestions } from '@/lib/actions';
 import Error from 'next/error';
 import { motion } from 'framer-motion';
 import SearchSteps from '@/components/SearchSteps';
 import { OptimizationModes } from './MessageInputActions/Optimization';
 
-
-// export type Message = {
-//   messageId: string;
-//   chatId: string;
-//   createdAt: Date;
-//   content: string;
-//   role: 'user' | 'assistant';
-//   suggestions?: string[];
-//   sources?: Document[];
-//   focusMode?: string; // focusMode 필드 추가
-//   optimizationMode?: string; // optimizationMode 필드 추가
-// };
 
 interface ExtraMessage {
 	field1?: string | null;
@@ -322,19 +310,11 @@ const loadMessages = async (
   setFileIds: (fileIds: string[]) => void,
   setSearchStepsMap: (map: Record<string, SearchStep[]>) => void, // 새로운 파라미터 추가
   setOptimizationMode: (mode: string) => void, // 새로운 파라미터 추가
+  router: ReturnType<typeof useRouter>
 ) => {
-  // const res = await fetch(
-  //   `${process.env.NEXT_PUBLIC_API_URL}/chats/${chatId}`,
-  //   {
-  //     method: 'GET',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //   },
-  // );
 
-  // console.log('[ChatWindow load Messages DEBUG] res:', res.json());
   
+  // console.log('[ChatWindow load Messages DEBUG] res:', res.json());
   const res = await fetch(
     `http://localhost:3002/api/chats/${chatId}/messages`,
     {
@@ -344,37 +324,33 @@ const loadMessages = async (
       },
     },
   );
+  console.log('[ChatWindow] 메시지 반응', res);
 
-  // console.log('[ChatWindow load Messages DEBUG] res:', res.json());
-
-  if (res.status === 404) {
+  if (res.status === 204) {
     setNotFound(true);
     setIsMessagesLoaded(true);
+
+    // 0.5초 기다렸다가 홈으로 이동
+    setTimeout(() => {
+      router.push('/');
+    }, 500);
+
     return;
   }
 
-  // const data = await res.json();
-  const data = await res.json();
-  const rawMessages = data.messageList;
-  rawMessages.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-  if (!rawMessages || rawMessages.length === 0) {
+  const data = await res.json();  
+  const rawMessages = data.messageList;
+  // 단순히 시간순으로 정렬
+  rawMessages.sort((a: any, b: any) => 
+    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+
+  if (rawMessages.length === 0) {
     setIsMessagesLoaded(true);
     return;
   }
 
-  // 공통 chat 정보는 첫 메시지 기준으로 가져옴
-  const commonChatData = rawMessages[0].chat;
-
-  // const messages = data.messages.map((msg: any) => {
-  //   return {
-  //     ...msg,
-  //     metadata: msg.metadata || {},
-  //     sources: msg.metadata?.sources ?? [], // 메시지 타입의 sources 필드에 할당
-  //     focusMode: msg.focusMode, // 메시지에서 focusMode 가져오기
-  //     optimizationMode: msg.optimizationMode, // 메시지에서 optimizationMode 가져오기
-  //   } as Message;
-  // });
   const messages = rawMessages.map((msg: any) => ({
     ...msg,
     messageId: msg.id,
@@ -386,13 +362,11 @@ const loadMessages = async (
 
   console.log('[DEBUG] messages:', messages);
   setMessages(messages);
-  // optimizationMode 설정 추가
-  // if (data.chat.optimizationMode) {
-  //   setOptimizationMode(data.chat.optimizationMode);
-  // }
 
   // 메시지에서 searchSteps 정보 추출하여 searchStepsMap 초기화
   const newSearchStepsMap: Record<string, SearchStep[]> = {};
+  // 공통 chat 정보는 첫 메시지 기준으로 가져옴
+  const commonChatData = rawMessages[0].chat;
   
   // 사용자와 어시스턴트 메시지 쌍을 찾아 처리
   for (let i = 0; i < messages.length; i++) {
@@ -401,13 +375,11 @@ const loadMessages = async (
       const assistantMessage = messages[i];
       
       // 각 메시지의 focusMode를 확인
-      // const messageFocusMode = assistantMessage.focusMode || data.chat.focusMode;
       const messageFocusMode = assistantMessage.focusMode || commonChatData.focusMode;
       
       // focusMode가 pipelineSearch인 메시지에 대해서만 처리
       if (messageFocusMode === 'pipelineSearch') {
         // 각 메시지의 optimizationMode를 사용
-        // const messageOptimizationMode = assistantMessage.optimizationMode || data.chat.optimizationMode;
         const messageOptimizationMode = assistantMessage.optimizationMode || commonChatData.optimizationMode;
         const currentOptimizationMode = OptimizationModes.find(
           mode => mode.key === messageOptimizationMode
@@ -459,34 +431,17 @@ const loadMessages = async (
     document.title = messages[0].content;
   }
 
-  // const files = data.chat.files.map((file: any) => {
-  //   return {
-  //     fileName: file.name,
-  //     fileExtension: file.name.split('.').pop(),
-  //     fileId: file.fileId,
-  //   };
-  // });
-
-
+  // const files = commonChatData.fileEntities?.map((file: any) => ({
+  //   fileName: file.name,
+  //   fileExtension: file.name.split('.').pop(),
+  //   fileId: file.fileId,
+  // })) ?? [];
+  
   // setFiles(files);
   // setFileIds(files.map((file: File) => file.fileId));
-  const files = commonChatData.fileEntities?.map((file: any) => ({
-    fileName: file.name,
-    fileExtension: file.name.split('.').pop(),
-    fileId: file.fileId,
-  })) ?? [];
-  
-  setFiles(files);
-  setFileIds(files.map((file: File) => file.fileId));
 
   setChatHistory(history);
   
-  // 마지막 메시지의 focusMode를 우선적으로 사용하고, 없으면 채팅 전체의 focusMode 사용
-  // if (messages.length > 0 && messages[messages.length - 1].focusMode) {
-  //   setFocusMode(messages[messages.length - 1].focusMode);
-  // } else {
-  //   setFocusMode(data.chat.focusMode);
-  // }
   const lastMessage = messages[messages.length - 1];
   setFocusMode(lastMessage.focusMode || commonChatData.focusMode);
   setOptimizationMode(lastMessage.optimizationMode || commonChatData.optimizationMode || '');
@@ -523,6 +478,8 @@ const ChatWindow = ({ id }: { id?: string }) => {
   const [searchStepsMap, setSearchStepsMap] = useState<Record<string, SearchStep[]>>({});
   const [userData, setUserData] = useState<User | null>(null);
 
+  //새창
+  const router = useRouter();
   const ws = useSocket(
     process.env.NEXT_PUBLIC_WS_URL!,
     setIsWSReady,
@@ -592,7 +549,8 @@ const ChatWindow = ({ id }: { id?: string }) => {
         setFiles,
         setFileIds,
         setSearchStepsMap, // 새로운 파라미터 전달
-        setOptimizationMode  // 새로운 파라미터 전달
+        setOptimizationMode,  // 새로운 파라미터 전달
+        router
       );
     } else if (!chatId) {
       console.log('[ChatWindow] 새 채팅 생성');
@@ -600,7 +558,6 @@ const ChatWindow = ({ id }: { id?: string }) => {
       setIsMessagesLoaded(true);
       setChatId(crypto.randomBytes(20).toString('hex'));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -610,7 +567,6 @@ const ChatWindow = ({ id }: { id?: string }) => {
         console.log('[DEBUG] closed');
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const messagesRef = useRef<Message[]>([]);
@@ -627,7 +583,10 @@ const ChatWindow = ({ id }: { id?: string }) => {
   }, [isMessagesLoaded, isWSReady]);
 
   const sendMessage = async (message: string, messageId?: string) => {
+    
     if (loading) return;
+
+    
 
     console.log('[ChatWindow] 메시지 전송 시작:', {
       messageId,
@@ -669,21 +628,6 @@ const ChatWindow = ({ id }: { id?: string }) => {
 
     }
 
-    // setMessages((prevMessages) => [
-    //   ...prevMessages,
-    //   {
-    //     content: message,
-    //     messageId: messageId!,
-    //     chatId: chatId!,
-    //     role: 'user' as const,  // 'as const'를 추가하여 리터럴 타입으로 명시
-    //     createdAt: new Date(),
-    //     suggestions: undefined,  // 선택적 필드 명시적으로 추가
-    //     sources: undefined,      // 선택적 필드 명시적으로 추가
-    //     focusMode: focusMode     // 현재 선택된 focusMode 저장
-    //   },
-    // ]);
-
-    // 0327
     setMessages((prevMessages) => [
       ...prevMessages,
       {
@@ -724,7 +668,6 @@ const ChatWindow = ({ id }: { id?: string }) => {
 
     // 검색 단계 업데이트를 위한 타이머 설정 (기존 코드 유지)
   if (focusMode === 'pipelineSearch') {
-    // 0.5초 후에 start 단계를 completed로 변경하고 search 단계를 active로 변경
     setTimeout(() => {
       setSearchStepsMap(prev => {
         const currentSteps = prev[messageId] || [];
@@ -791,24 +734,6 @@ const ChatWindow = ({ id }: { id?: string }) => {
           }));
         }
 
-      //   if (!added) {
-      //     setMessages((prevMessages) => [
-      //       ...prevMessages,
-      //       {
-      //         content: '',
-      //         messageId: data.messageId,
-      //         chatId: chatId!,
-      //         role: 'assistant',
-      //         sources: sources,
-      //         createdAt: new Date(),
-      //         focusMode: focusMode  // 현재 선택된 focusMode 저장
-      //       },
-      //     ]);
-      //     added = true;
-      //   }
-      //   setMessageAppeared(true);
-      // }
-      // 0327
       if (!added) {
         setMessages((prevMessages) => [
           ...prevMessages,
@@ -929,22 +854,6 @@ const ChatWindow = ({ id }: { id?: string }) => {
 
         const lastMsg = messagesRef.current[messagesRef.current.length - 1];
 
-        // if (
-        //   lastMsg.role === 'assistant' &&
-        //   lastMsg.sources &&
-        //   lastMsg.sources.length > 0 &&
-        //   !lastMsg.suggestions
-        // ) {
-        //   const suggestions = await getSuggestions(messagesRef.current);
-        //   setMessages((prev) =>
-        //     prev.map((msg) => {
-        //       if (msg.messageId === lastMsg.messageId) {
-        //         return { ...msg, suggestions: suggestions };
-        //       }
-        //       return msg;
-        //     }),
-        //   );
-        // }
       }
     };
 
@@ -958,30 +867,163 @@ const getSearchStepsForMessage = (messageId: string) => {
 };
 
   // 0327
-  const rewrite = (messageId: string) => {
+  const rewrite = async (messageId: string) => {
     console.log('[ChatWindow] 메시지 재작성:', messageId);
     const index = messages.findIndex((msg) => msg.id === messageId);
 
-    if (index === -1) return;
+    // if (index === -1) return;
 
-    const message = messages[index - 1];
-    // 메시지의 focusMode를 임시 저장
-    const messageFocusMode = message.focusMode;
+    // const message = messages[index - 1]; // 사용자 메시지
+    // const assistantMessage = messages[index]; // AI 메시지
+    // const messageFocusMode = message.focusMode;
 
-    setMessages((prev) => {
-      return [...prev.slice(0, messages.length > 2 ? index - 1 : 0)];
-    });
+    // if (messageFocusMode) {
+    //   setFocusMode(messageFocusMode);
+    // }
+    // 1. AI 답변 메시지 정보 가져오기
+    const getAnswerRes = await fetch(
+      `http://localhost:3002/api/messages/${messageId}`,
+      {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+
+    const assistantMessage = await getAnswerRes.json();
+      
+    // 2. description(질문 메시지 ID)으로 원본 질문 메시지 가져오기
+    const getUserMessageRes = await fetch(
+      `http://localhost:3002/api/messages/${assistantMessage.description}`,
+      {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+    const message = await getUserMessageRes.json();
+
+    
+
+    // 클라이언트 상태 업데이트 - 사용자 메시지는 유지하고 AI 메시지만 초기화
+    console.log('[ChatWindow] 메시지 재작성 assistantMessage:', assistantMessage);
+    console.log('[ChatWindow] 메시지 재작성 message:', message);
+    // setMessages((prev) =>
+    //   prev.map((msg, i) => {
+    //     if (i === index) {
+    //       return {
+    //         ...msg,
+    //         content: '',
+    //         metadata: { ...msg.metadata, sources: undefined },
+    //         description: message.id,
+    //       };
+    //     }
+    //     return msg;
+    //   })
+    // );
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.id === messageId) {
+          return {
+            ...msg,
+            content: '',
+            metadata: { ...msg.metadata, sources: undefined },
+            description: message.id,
+          };
+        }
+        return msg;
+      })
+    );
+    console.log('[ChatWindow] 메시지 재작성 index:', messages);
+
     setChatHistory((prev) => {
-      return [...prev.slice(0, messages.length > 2 ? index - 1 : 0)];
+      return [...prev.slice(0, index)];
     });
+    console.log('[ChatWindow] 메시지 재작성 chatHistory:', chatHistory);
+    setLoading(true);
+    setMessageAppeared(false);
 
-    // 메시지 재작성 시 원래 메시지의 focusMode 사용
-    if (messageFocusMode) {
-      setFocusMode(messageFocusMode);
-    }
+    let sources: Document[] | undefined = undefined;
+    let recievedMessage = '';
 
-    // 0327
-    sendMessage(message.content, message.id);
+    const messageHandler = async (e: MessageEvent) => {
+      const data = JSON.parse(e.data);
+
+      if (data.type === 'error') {
+        console.error('[ChatWindow] 에러 발생:', data.data);
+        toast.error(data.data);
+        setLoading(false);
+        return;
+      }
+
+      if (data.type === 'sources') {
+        sources = data.data;
+        console.log('[ChatWindow] 소스 수신 sources:', sources);
+        
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === messageId) {
+              return {
+                ...msg,
+                metadata: {
+                  ...msg.metadata,
+                  sources: sources
+                }
+              };
+            }
+            return msg;
+          })
+        );
+      }
+
+      if (data.type === 'message') {
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === messageId) {
+              return { ...msg, content: (msg.content || '') + data.data };
+            }
+            return msg;
+          })
+        );
+
+        recievedMessage += data.data;
+        setMessageAppeared(true);
+      }
+
+      if (data.type === 'messageEnd') {
+        console.log('[ChatWindow] 메시지 수신 완료');
+        setChatHistory((prevHistory) => [
+          ...prevHistory,
+          ['human', message.content],
+          ['assistant', recievedMessage],
+        ]);
+
+        ws?.removeEventListener('message', messageHandler);
+        setLoading(false);
+      }
+    };
+
+    // 이벤트 리스너를 먼저 등록
+    ws?.addEventListener('message', messageHandler);
+
+    console.log('[ChatWindow] 메시지 재작성 message2:', message);
+
+    // 그 다음 메시지 전송
+    ws?.send(
+      JSON.stringify({
+        type: 'rewrite',
+        message: {
+          messageId: messageId,
+          chatId: chatId!,
+          content: message.content,
+          userId: message.createdBy,
+          description: message.id
+        },
+        files: fileIds,
+        focusMode: message.focusMode || focusMode,
+        optimizationMode: optimizationMode,
+        extraMessage: extraMessage,
+        history: chatHistory.slice(0, index)
+      })
+    );
   };
 
   useEffect(() => {
@@ -1019,6 +1061,7 @@ const getSearchStepsForMessage = (messageId: string) => {
             <Chat
               loading={loading}
               messages={messages}
+              setMessages={setMessages}
               sendMessage={sendMessage}
               messageAppeared={messageAppeared}
               rewrite={rewrite}
@@ -1026,8 +1069,8 @@ const getSearchStepsForMessage = (messageId: string) => {
               setFileIds={setFileIds}
               files={files}
               setFiles={setFiles}
-              searchStepsMap={searchStepsMap} // searchSteps 대신 searchStepsMap 전달
-              getSearchStepsForMessage={getSearchStepsForMessage} // 함수 전달
+              searchStepsMap={searchStepsMap}
+              getSearchStepsForMessage={getSearchStepsForMessage}
               focusMode={focusMode}
               setFocusMode={setFocusMode}
               optimizationMode={optimizationMode}

@@ -83,14 +83,16 @@ export default function EmptyChatMessageInput({
       }}
       className="w-full"
     >
-      <div className="flex flex-col bg-white dark:bg-dark-800 shadow-lg rounded-3xl p-4 border border-light-200 dark:border-dark-200">
+      <div className="flex flex-col bg-white dark:bg-dark-800 shadow-md rounded-3xl 
+      p-4 border border-light-200 dark:border-dark-200">
 
         <TextareaAutosize
           ref={inputRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           minRows={2}
-          className="bg-transparent placeholder-gray-500 dark:placeholder-gray-400 text-lg text-gray-900 dark:text-white resize-none focus:outline-none w-full"
+          className="bg-transparent placeholder-gray-500 dark:placeholder-gray-400 
+          text-lg text-gray-900 dark:text-white resize-none focus:outline-none w-full"
           placeholder="무엇을 도와드릴까요?"
         />
 
@@ -129,7 +131,7 @@ export default function EmptyChatMessageInput({
 
           <button
             disabled={!message.trim()}
-            className="bg-blue-500 text-white disabled:bg-gray-300 rounded-full p-2 hover:bg-blue-600 transition"
+            className="bg-brand-500 text-white disabled:bg-gray-300 rounded-full p-2 hover:bg-brand-600 transition"
           >
             <ArrowRight size={20} />
           </button>
