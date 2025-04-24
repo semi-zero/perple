@@ -2,7 +2,7 @@ FROM node:18-slim
 
 WORKDIR /home/perplexica
 
-COPY src /home/perplexica/src
+#COPY src /home/perplexica/src
 COPY tsconfig.json /home/perplexica/
 COPY drizzle.config.ts /home/perplexica/
 COPY package.json /home/perplexica/
